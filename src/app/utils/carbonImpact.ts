@@ -80,42 +80,45 @@ function getImpactLabel(days: number, annualPercent: number): {
     return {
       label: 'Minimal Impact',
       color: 'bg-emerald-500',
-      description: `Less than 2.4 hours of ideal carbon footprint`,
+      description: `Uses less than ${(days * 24).toFixed(0)} hours of your annual carbon budget (${annualPercent.toFixed(2)}% of year)`,
       severity: 'excellent'
     };
   } else if (days < 1) {
     return {
       label: 'Low Impact',
       color: 'bg-green-500',
-      description: `Equivalent to ${(days * 24).toFixed(0)} hours of ideal carbon footprint`,
+      description: `Uses ${(days * 24).toFixed(0)} hours of your annual carbon budget (${annualPercent.toFixed(2)}% of year)`,
       severity: 'good'
     };
   } else if (days < 7) {
     return {
       label: 'Moderate Impact',
       color: 'bg-yellow-500',
-      description: `Equivalent to ${days.toFixed(1)} ${days === 1 ? 'day' : 'days'} of ideal carbon footprint`,
+      description: `Uses ${days.toFixed(1)} ${days === 1 ? 'day' : 'days'} of your annual carbon budget (${annualPercent.toFixed(2)}% of year)`,
       severity: 'moderate'
     };
   } else if (days < 30) {
+    const weeks = days / 7;
     return {
       label: 'High Impact',
       color: 'bg-orange-500',
-      description: `Equivalent to ${(days / 7).toFixed(1)} ${days < 14 ? 'weeks' : 'weeks'} of ideal carbon footprint (${annualPercent.toFixed(1)}% of annual budget)`,
+      description: `Uses ${weeks.toFixed(1)} ${weeks === 1 ? 'week' : 'weeks'} (${days.toFixed(0)} days) of your annual carbon budget - ${annualPercent.toFixed(2)}% of your yearly allowance`,
       severity: 'high'
     };
   } else if (days < 90) {
+    const months = days / 30.44;
     return {
       label: 'Very High Impact',
       color: 'bg-red-500',
-      description: `Equivalent to ${(days / 30.44).toFixed(1)} ${days < 60 ? 'months' : 'months'} of ideal carbon footprint (${annualPercent.toFixed(1)}% of annual budget)`,
+      description: `Uses ${months.toFixed(1)} ${months === 1 ? 'month' : 'months'} (${days.toFixed(0)} days) of your annual carbon budget - ${annualPercent.toFixed(2)}% of your yearly allowance`,
       severity: 'very-high'
     };
   } else {
+    const years = days / 365;
     return {
       label: 'Extreme Impact',
       color: 'bg-red-700',
-      description: `Equivalent to ${(days / 365).toFixed(1)} ${days < 730 ? 'years' : 'years'} of ideal carbon footprint (${annualPercent.toFixed(1)}% of annual budget)`,
+      description: `Uses ${years.toFixed(2)} ${years === 1 ? 'year' : 'years'} of your annual carbon budget - ${annualPercent.toFixed(2)}% of your yearly allowance`,
       severity: 'extreme'
     };
   }
