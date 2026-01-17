@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera } from '@/app/components/Camera';
 import { AnalysisResults } from '@/app/components/AnalysisResults';
 import { Header } from '@/app/components/Header';
@@ -9,16 +9,15 @@ import {
   analyzeWithGemini, 
   generateNarration, 
   lookupProductByBarcode, 
-  saveEmission
+  saveEmission,
+  loginUser,
+  registerUser,
+  getCurrentUser,
+  logoutUser,
+  type AuthUser
 } from '@/app/services/api';
 import { Toaster } from '@/app/components/ui/sonner';
 import { toast } from 'sonner';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
 
 export interface EnvironmentalData {
   objectName: string;
@@ -37,7 +36,7 @@ export interface EnvironmentalData {
 
 export default function App() {
   // Auth state
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
   const [authLoading, setAuthLoading] = useState(false);
@@ -47,23 +46,27 @@ export default function App() {
   const [analysisData, setAnalysisData] = useState<EnvironmentalData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [barcodeMode, setBarcodeMode] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+
+  // Check for existing session on app load
+  useEffect(() => {
+    getCurrentUser().then(existingUser => {
+      if (existingUser) {
+        setUser(existingUser);
+        console.log('📱 Restored session for:', existingUser.name);
+      }
+    }).catch(() => {
+      // No valid session, that's fine
+    });
+  }, []);
 
   // Auth handlers
   const handleSignIn = async (email: string, password: string) => {
     setAuthLoading(true);
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful sign in
-      setUser({
-        id: '1',
-        name: email.split('@')[0],
-        email: email
-      });
+      const response = await loginUser(email, password);
+      setUser(response.user);
       setShowAuth(false);
-      toast.success('Welcome back!');
+      toast.success(`Welcome back, ${response.user.name}!`);
     } catch (error: any) {
       throw new Error(error.message || 'Sign in failed');
     } finally {
@@ -74,17 +77,10 @@ export default function App() {
   const handleSignUp = async (name: string, email: string, password: string) => {
     setAuthLoading(true);
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful sign up
-      setUser({
-        id: '1',
-        name: name,
-        email: email
-      });
+      const response = await registerUser(name, email, password);
+      setUser(response.user);
       setShowAuth(false);
-      toast.success('Account created successfully!');
+      toast.success(`Welcome to EcoLens, ${response.user.name}!`);
     } catch (error: any) {
       throw new Error(error.message || 'Sign up failed');
     } finally {
@@ -93,6 +89,7 @@ export default function App() {
   };
 
   const handleSignOut = () => {
+    logoutUser();
     setUser(null);
     setAnalysisData(null);
     toast.info('Signed out');
@@ -272,22 +269,24 @@ Analyze this product's environmental impact.`;
         console.warn('Audio generation failed, continuing without narration:', audioError);
       }
 
-      try {
-        await saveEmission({
-          userId: userId ?? "696c175caa25d65884c9db79",
-          imageUrl: imageData,
-          objectName: analysisResult.objectName,
-          category: detectCategory(analysisResult.objectName),
-          carbonValue: analysisResult.carbonValue,
-          carbonFootprint: analysisResult.carbonFootprint,
-          lifecycle: analysisResult.lifecycle,
-          explanation: analysisResult.explanation,
-          alternatives: analysisResult.alternatives,
-        });
-        console.log('💾 Emission saved to database');
-      } catch (saveError) {
-        console.warn('Could not save to database:', saveError);
-        // Don't fail the whole flow if save fails
+      // Save to database if user is logged in
+      if (user) {
+        try {
+          await saveEmission({
+            userId: user.id,
+            imageUrl: imageData,
+            objectName: analysisResult.objectName,
+            category: detectCategory(analysisResult.objectName),
+            carbonValue: analysisResult.carbonValue,
+            carbonFootprint: analysisResult.carbonFootprint,
+            lifecycle: analysisResult.lifecycle,
+            explanation: analysisResult.explanation,
+            alternatives: analysisResult.alternatives,
+          });
+          console.log('💾 Emission saved to database');
+        } catch (saveError) {
+          console.warn('Could not save to database:', saveError);
+        }
       }
 
       setAnalysisData({

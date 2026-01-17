@@ -8,6 +8,124 @@ const ELEVENLABS_API_KEY: string = import.meta.env.VITE_ELEVENLABS_API_KEY || ''
 // @ts-expect-error Vite env types
 const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
+// ============================================
+// AUTH TYPES & FUNCTIONS
+// ============================================
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  dailyCO2Goal?: number;
+  stats?: {
+    totalScans: number;
+    totalCO2: number;
+    streakDays: number;
+  };
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
+
+// Store token in localStorage
+const TOKEN_KEY = 'ecolens_token';
+
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setStoredToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearStoredToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+/**
+ * Register a new user
+ */
+export async function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password })
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.error || 'Registration failed');
+  }
+
+  // Store token
+  setStoredToken(data.token);
+  
+  return data;
+}
+
+/**
+ * Login user
+ */
+export async function loginUser(email: string, password: string): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.error || 'Login failed');
+  }
+
+  // Store token
+  setStoredToken(data.token);
+  
+  return data;
+}
+
+/**
+ * Get current user from stored token
+ */
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  const token = getStoredToken();
+  if (!token) return null;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      clearStoredToken();
+      return null;
+    }
+
+    return response.json();
+  } catch (error) {
+    clearStoredToken();
+    return null;
+  }
+}
+
+/**
+ * Logout user
+ */
+export function logoutUser(): void {
+  clearStoredToken();
+}
+
+// ============================================
+// PRODUCT TYPES
+// ============================================
+
 /**
  * Product data from Open Product Data API
  */
