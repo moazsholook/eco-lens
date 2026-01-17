@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Droplet, Coffee, Smartphone, Shirt, Laptop } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import {
   DropdownMenu,
@@ -15,11 +15,11 @@ interface DemoModeSelectorProps {
 
 export function DemoModeSelector({ onSelectDemo }: DemoModeSelectorProps) {
   const demoObjects = [
-    { id: 'bottle', emoji: '🍶', name: 'Plastic Bottle', impact: 'Low' },
-    { id: 'coffee', emoji: '☕', name: 'Coffee Cup', impact: 'Low' },
-    { id: 'phone', emoji: '📱', name: 'Smartphone', impact: 'High' },
-    { id: 'shirt', emoji: '👕', name: 'T-Shirt', impact: 'Medium' },
-    { id: 'laptop', emoji: '💻', name: 'Laptop', impact: 'High' },
+    { id: 'bottle', Icon: Droplet, name: 'Plastic Bottle', impact: 'Low' },
+    { id: 'coffee', Icon: Coffee, name: 'Coffee Cup', impact: 'Low' },
+    { id: 'phone', Icon: Smartphone, name: 'Smartphone', impact: 'High' },
+    { id: 'shirt', Icon: Shirt, name: 'T-Shirt', impact: 'Medium' },
+    { id: 'laptop', Icon: Laptop, name: 'Laptop', impact: 'High' },
   ];
 
   return (
@@ -43,7 +43,7 @@ export function DemoModeSelector({ onSelectDemo }: DemoModeSelectorProps) {
             onClick={() => onSelectDemo(obj.id)}
             className="cursor-pointer"
           >
-            <span className="text-2xl mr-3">{obj.emoji}</span>
+            <obj.Icon className="w-5 h-5 mr-3 text-emerald-600" />
             <div className="flex-1">
               <p className="font-medium">{obj.name}</p>
               <p className="text-xs text-gray-500">{obj.impact} Impact</p>
