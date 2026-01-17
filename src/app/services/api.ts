@@ -32,7 +32,16 @@ export interface AnalysisResponse {
   }[];
 }
 
-const ANALYSIS_PROMPT = `You are an environmental impact analyzer. Analyze the object in this image and provide detailed environmental data.
+const ANALYSIS_PROMPT = `You are an environmental impact analyzer. Analyze the object in the image and provide detailed environmental data based on FULL LIFECYCLE ASSESSMENT.
+
+CRITICAL: MANUFACTURING COSTS ARE MANDATORY FOR ALL PRODUCTS. Manufacturing typically accounts for 50-90% of a product's total carbon footprint, especially for:
+- Plastics and synthetic materials (petroleum extraction, refining, polymerization, molding)
+- Metals (mining, smelting, processing - especially aluminum which requires massive energy)
+- Electronics and tech devices (rare earth mining, semiconductor fabrication, assembly)
+- Synthetic textiles (petroleum-based fibers, chemical processing, dyeing)
+- Disposable/single-use items (intensive production processes for short lifespan)
+
+NEVER report 0g or near-0g carbon footprint. Even small items like plastic bottles or cans have significant manufacturing costs (80-85g for bottles, 60-80g for cans). Smart watches have 20-40kg CO2e despite their small size because electronics manufacturing is extremely energy-intensive.
 
 Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 {
@@ -67,32 +76,70 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 
 CRITICAL REQUIREMENTS FOR ACCURACY AND CONSISTENCY:
 
-1. carbonValue MUST be in GRAMS (not kg, not tons) representing FULL LIFECYCLE:
-   - Include: raw material extraction, manufacturing, transportation, usage emissions (if applicable), and disposal
-   - Typical realistic ranges based on research:
-     * Small single-use items (bottle, can, cup): 30-150 grams
-     * Clothing items (t-shirt, jeans): 3,000-15,000 grams (3-15kg)
-     * Electronics (phone, tablet): 50,000-120,000 grams (50-120kg)  
-     * Large electronics (laptop, TV): 150,000-300,000 grams (150-300kg)
+1. carbonValue MUST be in GRAMS (not kg, not tons) representing FULL LIFECYCLE - MANUFACTURING IS MANDATORY:
+   
+   **MANDATORY COMPONENTS FOR ALL PRODUCTS:**
+   - Raw material extraction (mining, drilling, agriculture, forestry)
+   - MANUFACTURING PROCESSES (this is usually 50-90% of total impact):
+     * Material processing (refining petroleum, smelting metals, chemical synthesis)
+     * Product formation (molding plastics, forging metals, assembly)
+     * Energy-intensive processes (especially for plastics, metals, electronics)
+   - Transportation (to market and end-of-life)
+   - Usage emissions (only if product consumes energy/fuel during use)
+   - Disposal/decomposition (landfill, recycling, incineration)
+   
+   **Manufacturing costs by material type:**
+   - Plastics: Petroleum extraction (~20g per gram of plastic) + refining + polymerization + molding (~40-60g total per bottle/can)
+   - Aluminum: Bauxite mining + Bayer process + Hall-Héroult smelting (extremely energy-intensive: ~8-10kg CO2 per kg aluminum)
+   - Synthetic materials: Petroleum extraction + chemical processing + fiber production
+   - Electronics: Rare earth mining + semiconductor fabrication + assembly (most energy-intensive)
+   
+   **Typical realistic ranges based on research (INCLUDING full manufacturing):**
+     * Plastic water bottle: 80-85g (petroleum extraction + refining + bottle formation + transport)
+     * Aluminum can: 60-80g (bauxite mining + energy-intensive smelting + can formation)
+     * Disposable coffee cup: 100-120g (paper production + plastic lining + manufacturing)
+     * Smart watch: 20,000-40,000g (electronics manufacturing is energy-intensive!)
+     * Smartphone: 70,000-95,000g (rare earth mining + complex manufacturing)
+     * Cotton t-shirt: 5,000-8,000g (cotton agriculture + processing + manufacturing + shipping)
+     * Synthetic t-shirt: 8,000-12,000g (petroleum extraction + polymer production + manufacturing)
+     * Laptop: 180,000-220,000g (complex electronics manufacturing)
+     * Large electronics (TV): 200,000-300,000g
 
 2. carbonFootprint string MUST match carbonValue EXACTLY:
    - If carbonValue = 82.8, then carbonFootprint = "82.8g CO₂e"
    - If carbonValue = 95000, then carbonFootprint = "95kg CO₂e" or "95.0kg CO₂e"
    - Format: use "g" for values < 1000, "kg" for values >= 1000
 
-3. explanation MUST be consistent with carbonValue and include the exact number:
-   - Example for 82.8g: "This plastic bottle has a carbon footprint of 82.8 grams of CO₂ equivalent when accounting for its full lifecycle from petroleum extraction to landfill decomposition."
-   - Example for 95000g: "This smartphone has a carbon footprint of 95 kilograms (95,000 grams) of CO₂ equivalent over its full lifecycle, including mining of rare earth elements, manufacturing in energy-intensive facilities, shipping, and end-of-life disposal."
+3. explanation MUST be consistent with carbonValue, include the exact number, and emphasize manufacturing:
+   - Example for 82.8g: "This plastic water bottle has a carbon footprint of 82.8 grams of CO₂ equivalent. The majority comes from manufacturing: petroleum extraction, refining into plastic resin, and bottle molding processes account for most of its environmental cost."
+   - Example for 60g (can): "This aluminum can has a carbon footprint of 60 grams of CO₂ equivalent. Despite its small size, aluminum production is extremely energy-intensive - the smelting process alone accounts for over 80% of the can's total carbon footprint."
+   - Example for 95000g: "This smartphone has a carbon footprint of 95 kilograms (95,000 grams) of CO₂ equivalent. Manufacturing dominates this impact: rare earth mining, semiconductor chip fabrication, and assembly in energy-intensive facilities account for 70-80% of the total."
+   - Example for 30000g (smart watch): "This smartwatch has a carbon footprint of 30 kilograms (30,000 grams) of CO₂ equivalent. Despite its compact size, the manufacturing process - including rare earth mining for components and semiconductor fabrication - makes it a high-impact item."
    - DO NOT say "4.0 tons" if carbonValue is 4000 grams - that's only 4kg, not 4 tons!
    - DO NOT say vague things like "significant impact" without the actual number - ALWAYS include the exact carbonValue
+   - ALWAYS mention manufacturing costs in the explanation, especially for plastics, metals, and electronics
 
-4. Use realistic, research-based estimates:
-   - Plastic water bottle: ~80-85g (mostly production)
-   - Aluminum can: ~60-80g (high production energy, good recycling)
-   - Disposable coffee cup: ~100-120g (paper + plastic lining)
-   - Cotton t-shirt: ~5,000-8,000g (agriculture, processing, shipping)
-   - Smartphone: ~70,000-95,000g (mining, manufacturing, some usage)
-   - Laptop: ~180,000-220,000g (complex manufacturing, longer usage)
+4. Use realistic, research-based estimates with FULL manufacturing included:
+   
+   **Single-use items (manufacturing is majority of impact):**
+   - Plastic water bottle: ~80-85g (petroleum extraction 20g + refining 15g + bottle molding 40g + transport 10g)
+   - Aluminum can: ~60-80g (bauxite mining 5g + smelting 50g + can formation 10g + transport 5g)
+   - Disposable coffee cup: ~100-120g (paper production 30g + plastic lining 40g + manufacturing 30g + transport 20g)
+   - Plastic bag: ~5-10g (but often used once, so impact per use is significant)
+   
+   **Electronics (manufacturing dominates - 70-90% of total):**
+   - Smart watch: ~20,000-40,000g (rare earth mining 5k + semiconductor fab 15k + assembly 5k + shipping 3k)
+   - Smartphone: ~70,000-95,000g (rare earth mining 20k + chip fab 35k + screen/battery 20k + assembly 10k)
+   - Tablet: ~50,000-70,000g (similar to phone, slightly less complex)
+   - Laptop: ~180,000-220,000g (larger screen 40k + complex board 80k + battery 30k + assembly 40k)
+   - TV: ~200,000-300,000g (large screen manufacturing is extremely energy-intensive)
+   
+   **Clothing (manufacturing varies by material):**
+   - Cotton t-shirt: ~5,000-8,000g (cotton farming 2k + processing 1.5k + manufacturing 2k + shipping 1.5k)
+   - Synthetic t-shirt (polyester): ~8,000-12,000g (petroleum extraction 3k + polymerization 2k + fiber production 2k + manufacturing 2k)
+   - Jeans: ~15,000-25,000g (cotton farming 6k + processing 4k + dyeing 3k + manufacturing 4k)
+   
+   **KEY POINT: Even small items have manufacturing costs. A plastic bottle is NOT 0g - it's 80-85g due to manufacturing!**
 
 ACCURACY CHECK: Before returning, verify that:
 - The number in explanation matches carbonValue exactly
