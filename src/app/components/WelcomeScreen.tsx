@@ -1,4 +1,4 @@
-import { Camera as CameraIcon, Sparkles } from 'lucide-react';
+import { Camera as CameraIcon, Sparkles, ScanBarcode } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Card } from '@/app/components/ui/card';
 import { motion } from 'motion/react';
@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 
 interface WelcomeScreenProps {
   onStart: () => void;
+  onBarcodeScan?: () => void;
 }
 
 // Particle component for floating leaves/eco elements
@@ -76,7 +77,7 @@ function FloatingParticles() {
   );
 }
 
-export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
+export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
   const examples = [
     { emoji: '☕', label: 'Coffee Cup' },
     { emoji: '💻', label: 'Laptop' },
@@ -108,14 +109,28 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             lifecycle story, and sustainable alternatives.
           </p>
           
-          <Button
-            onClick={onStart}
-            size="lg"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-6 text-lg gap-3 shadow-lg hover:shadow-xl transition-all animate-in fade-in duration-700 delay-300"
-          >
-            <CameraIcon className="w-6 h-6" />
-            Start Scanning
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in duration-700 delay-300">
+            <Button
+              onClick={onStart}
+              size="lg"
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-8 py-6 text-lg gap-3 shadow-lg hover:shadow-xl transition-all"
+            >
+              <CameraIcon className="w-6 h-6" />
+              Start Scanning
+            </Button>
+            
+            {onBarcodeScan && (
+              <Button
+                onClick={onBarcodeScan}
+                size="lg"
+                variant="outline"
+                className="border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50 px-8 py-6 text-lg gap-3 shadow-lg hover:shadow-xl transition-all"
+              >
+                <ScanBarcode className="w-6 h-6" />
+                Scan Barcode
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* How It Works */}

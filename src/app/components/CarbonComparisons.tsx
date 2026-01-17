@@ -1,5 +1,6 @@
 import { Card } from '@/app/components/ui/card';
 import { Car, Plane, Home, Zap } from 'lucide-react';
+import { formatNumber, formatCarbonFootprint } from '@/app/utils/numberFormat';
 
 interface CarbonComparisonsProps {
   carbonValue: number; // in grams CO2e
@@ -9,12 +10,12 @@ export function CarbonComparisons({ carbonValue }: CarbonComparisonsProps) {
   // Convert to kg for easier comparisons
   const carbonKg = carbonValue / 1000;
 
-  // Calculate equivalents
+  // Calculate equivalents with dynamic decimal formatting
   const comparisons = [
     {
       icon: Car,
       label: 'Driving',
-      value: (carbonKg / 0.251).toFixed(1), // avg 251g CO2 per km
+      value: formatNumber(carbonKg / 0.251), // avg 251g CO2 per km
       unit: 'km',
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
@@ -22,7 +23,7 @@ export function CarbonComparisons({ carbonValue }: CarbonComparisonsProps) {
     {
       icon: Plane,
       label: 'Flying',
-      value: (carbonKg / 0.255).toFixed(1), // avg 255g CO2 per km (economy)
+      value: formatNumber(carbonKg / 0.255), // avg 255g CO2 per km (economy)
       unit: 'km',
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
@@ -30,7 +31,7 @@ export function CarbonComparisons({ carbonValue }: CarbonComparisonsProps) {
     {
       icon: Zap,
       label: 'Electricity',
-      value: (carbonKg / 0.475).toFixed(1), // avg 475g CO2 per kWh
+      value: formatNumber(carbonKg / 0.475), // avg 475g CO2 per kWh
       unit: 'kWh',
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100'
@@ -38,7 +39,7 @@ export function CarbonComparisons({ carbonValue }: CarbonComparisonsProps) {
     {
       icon: Home,
       label: 'Home Energy',
-      value: (carbonKg / 12).toFixed(2), // avg 12kg CO2 per day
+      value: formatNumber(carbonKg / 12), // avg 12kg CO2 per day
       unit: 'days',
       color: 'text-green-600',
       bgColor: 'bg-green-100'
@@ -51,7 +52,7 @@ export function CarbonComparisons({ carbonValue }: CarbonComparisonsProps) {
         Carbon Footprint Equivalents
       </h3>
       <p className="text-sm text-gray-600 mb-6">
-        This object's {carbonKg >= 1 ? `${carbonKg.toFixed(1)}kg` : `${carbonValue.toFixed(0)}g`} CO₂e is equivalent to:
+        This object's {carbonKg >= 1 ? `${formatNumber(carbonKg, 1)}kg` : `${formatNumber(carbonValue, 0)}g`} CO₂e is equivalent to:
       </p>
       
       <div className="grid grid-cols-2 gap-4">

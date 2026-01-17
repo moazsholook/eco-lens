@@ -6,6 +6,19 @@ const OPENAI_API_KEY: string = import.meta.env.VITE_OPENAI_API_KEY || '';
 // @ts-expect-error Vite env types
 const ELEVENLABS_API_KEY: string = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
 
+/**
+ * Product data from Open Product Data API
+ */
+export interface ProductData {
+  title?: string;
+  description?: string;
+  brand?: string;
+  category?: string;
+  images?: string[];
+  barcode?: string;
+  error?: string;
+}
+
 export interface AnalysisResponse {
   objectName: string;
   carbonFootprint: string;
@@ -24,8 +37,8 @@ const ANALYSIS_PROMPT = `You are an environmental impact analyzer. Analyze the o
 Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 {
   "objectName": "Name of the object",
-  "carbonFootprint": "X.X kg CO₂e",
-  "carbonValue": 0.0,
+  "carbonFootprint": "X.Xg CO₂e" or "X.Xkg CO₂e",
+  "carbonValue": 82.8,
   "lifecycle": [
     "Stage 1: Description",
     "Stage 2: Description",
@@ -52,7 +65,11 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
   ]
 }
 
-Be specific with real carbon footprint estimates based on lifecycle analysis research. The carbonValue should be a number in kg.`;
+IMPORTANT:
+- Be specific with real carbon footprint estimates based on lifecycle analysis research
+- carbonValue must be a positive number in GRAMS (not kg). For example: a plastic bottle = 82.8, a laptop = 200000
+- carbonFootprint string should match the carbonValue (use "g" for values < 1000, "kg" for values >= 1000)
+- Use 2 decimal places for values < 100, 1 decimal place for values < 1000, and whole numbers for larger values`;
 
 /**
  * Analyze image using OpenAI GPT-4 Vision API
@@ -170,6 +187,56 @@ export async function generateNarration(text: string): Promise<string> {
 
   } catch (error) {
     console.error('ElevenLabs API error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Lookup product information by barcode using Open Product Data API
+ * @param barcode - The barcode (UPC/EAN) to lookup
+ * @returns Product data including name, brand, images, etc.
+ */
+export async function lookupProductByBarcode(barcode: string): Promise<ProductData> {
+  try {
+    // Remove any non-digit characters from barcode
+    const cleanBarcode = barcode.replace(/\D/g, '');
+    
+    if (!cleanBarcode || cleanBarcode.length < 8) {
+      throw new Error('Invalid barcode format');
+    }
+
+    const response = await fetch(`https://www.product-lookup.com/api/${cleanBarcode}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      // If product not found, return empty data
+      if (response.status === 404) {
+        return {
+          barcode: cleanBarcode,
+          error: 'Product not found in database'
+        };
+      }
+      throw new Error(`Product lookup API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Normalize the response format (API format may vary)
+    return {
+      title: data.title || data.name || data.product_name,
+      description: data.description,
+      brand: data.brand || data.manufacturer,
+      category: data.category || data.category_name,
+      images: data.images || (data.image ? [data.image] : []),
+      barcode: cleanBarcode
+    };
+
+  } catch (error) {
+    console.error('Barcode lookup error:', error);
     throw error;
   }
 }
