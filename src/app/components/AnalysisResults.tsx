@@ -211,7 +211,7 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
             
             {/* Impact description and stats */}
             <div className="space-y-3">
-              <div className={`flex items-center gap-2 text-sm p-3 rounded-lg border ${
+              <div className={`flex items-center gap-2 text-sm p-4 rounded-lg border ${
                 impactMetrics.severity === 'extreme' || impactMetrics.severity === 'very-high' 
                   ? 'bg-red-50 border-red-200' 
                   : impactMetrics.severity === 'high'
@@ -220,7 +220,7 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
                   ? 'bg-yellow-50 border-yellow-200'
                   : 'bg-emerald-50 border-emerald-200'
               }`}>
-                <AlertCircle className={`w-4 h-4 flex-shrink-0 ${
+                <AlertCircle className={`w-5 h-5 flex-shrink-0 ${
                   impactMetrics.severity === 'extreme' || impactMetrics.severity === 'very-high'
                     ? 'text-red-600'
                     : impactMetrics.severity === 'high'
@@ -229,31 +229,35 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
                     ? 'text-yellow-600'
                     : 'text-emerald-600'
                 }`} />
-                <span className="text-gray-700 font-medium">
-                  {impactMetrics.description}
-                </span>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 mb-1">What this means:</p>
+                  <p className="text-gray-700">
+                    {impactMetrics.description}
+                  </p>
+                </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Product Carbon</p>
-                  <p className="text-sm font-semibold text-gray-900">
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">Product's Total</p>
+                  <p className="text-base font-bold text-gray-900">
                     {carbonKg >= 1 
-                      ? `${carbonKg.toFixed(1)}kg CO₂e`
-                      : `${data.carbonValue.toFixed(1)}g CO₂e`}
+                      ? `${carbonKg.toFixed(1)}kg`
+                      : `${data.carbonValue.toFixed(0)}g`}
                   </p>
+                  <p className="text-xs text-gray-500">CO₂e</p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Annual Budget</p>
-                  <p className="text-sm font-semibold text-gray-900">
-                    4.0 tons/year
-                  </p>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">Your Yearly</p>
+                  <p className="text-base font-bold text-gray-900">4.0 tons</p>
+                  <p className="text-xs text-gray-500">Carbon Budget</p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Annual Impact</p>
-                  <p className="text-sm font-semibold text-gray-900">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">This Item Uses</p>
+                  <p className="text-base font-bold text-gray-900">
                     {impactMetrics.annualPercent.toFixed(2)}%
                   </p>
+                  <p className="text-xs text-gray-500">of Annual Budget</p>
                 </div>
               </div>
             </div>
