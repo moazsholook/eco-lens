@@ -1,0 +1,2 @@
+- numbers are currently hardcoded at 0. make them dynamic. add more or less decimal places if necessary, but default to 2.
+- Add barcode scanner

@@ -7,22 +7,80 @@ interface CameraProps {
   onCapture: (imageData: string) => void;
   onClose: () => void;
   isAnalyzing: boolean;
+  onBarcodeDetected?: (barcode: string) => void;
+  enableBarcodeScan?: boolean;
 }
 
-export function Camera({ onCapture, onClose, isAnalyzing }: CameraProps) {
+export function Camera({ onCapture, onClose, isAnalyzing, onBarcodeDetected, enableBarcodeScan = false }: CameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [barcodeDetector, setBarcodeDetector] = useState<BarcodeDetector | null>(null);
+  const scanningRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Initialize BarcodeDetector if supported and enabled
+    if (enableBarcodeScan && 'BarcodeDetector' in window) {
+      // @ts-expect-error BarcodeDetector may not be in TypeScript types
+      const detector = new BarcodeDetector({
+        formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39']
+      });
+      setBarcodeDetector(detector);
+    }
+
     startCamera();
     
     return () => {
       stopCamera();
+      if (scanningRef.current) {
+        cancelAnimationFrame(scanningRef.current);
+      }
     };
-  }, [facingMode]);
+  }, [facingMode, enableBarcodeScan]);
+
+  // Continuous barcode scanning when enabled
+  useEffect(() => {
+    if (!enableBarcodeScan || !barcodeDetector || !videoRef.current || isAnalyzing) {
+      return;
+    }
+
+    const scanBarcodes = async () => {
+      if (!videoRef.current || !barcodeDetector) return;
+
+      try {
+        const barcodes = await barcodeDetector.detect(videoRef.current);
+        
+        if (barcodes.length > 0 && onBarcodeDetected) {
+          const detectedBarcode = barcodes[0].rawValue;
+          if (detectedBarcode) {
+            onBarcodeDetected(detectedBarcode);
+            return; // Stop scanning after detection
+          }
+        }
+      } catch (err) {
+        // Silently continue scanning on errors
+      }
+
+      // Continue scanning
+      scanningRef.current = requestAnimationFrame(scanBarcodes);
+    };
+
+    // Start scanning after a short delay to let camera initialize
+    const timeout = setTimeout(() => {
+      if (videoRef.current && barcodeDetector) {
+        scanningRef.current = requestAnimationFrame(scanBarcodes);
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(timeout);
+      if (scanningRef.current) {
+        cancelAnimationFrame(scanningRef.current);
+      }
+    };
+  }, [enableBarcodeScan, barcodeDetector, isAnalyzing, onBarcodeDetected]);
 
   const startCamera = async () => {
     try {
@@ -112,8 +170,12 @@ export function Camera({ onCapture, onClose, isAnalyzing }: CameraProps) {
           </Button>
           
           <div className="text-white text-center">
-            <p className="text-sm font-medium">Position object in frame</p>
-            <p className="text-xs opacity-80">Tap to capture</p>
+            <p className="text-sm font-medium">
+              {enableBarcodeScan ? 'Point camera at barcode' : 'Position object in frame'}
+            </p>
+            <p className="text-xs opacity-80">
+              {enableBarcodeScan ? 'Barcode will auto-detect' : 'Tap to capture'}
+            </p>
           </div>
           
           <Button
