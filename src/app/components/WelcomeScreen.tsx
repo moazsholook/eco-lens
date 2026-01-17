@@ -1,6 +1,7 @@
 import { Camera as CameraIcon, Sparkles } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Card } from '@/app/components/ui/card';
+import { motion } from 'motion/react';
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -85,14 +86,24 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         <div className="mb-8">
           <p className="text-sm text-emerald-600 mb-4">Try scanning these objects:</p>
           <div className="flex flex-wrap justify-center gap-3">
-            {examples.map((item) => (
-              <div
+            {examples.map((item, index) => (
+              <motion.div
                 key={item.label}
                 className="bg-white border border-emerald-200 rounded-lg px-4 py-2 flex items-center gap-2 hover:border-emerald-400 transition-colors"
+                animate={{
+                  y: [0, -8, 0],
+                  x: [0, index % 2 === 0 ? 4 : -4, 0],
+                }}
+                transition={{
+                  duration: 3 + index * 0.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: index * 0.3,
+                }}
               >
                 <span className="text-2xl">{item.emoji}</span>
                 <span className="text-sm text-emerald-700">{item.label}</span>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>

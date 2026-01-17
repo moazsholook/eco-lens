@@ -3,7 +3,8 @@ import { Camera } from '@/app/components/Camera';
 import { AnalysisResults } from '@/app/components/AnalysisResults';
 import { Header } from '@/app/components/Header';
 import { WelcomeScreen } from '@/app/components/WelcomeScreen';
-import { getMockEnvironmentalData, getSpecificMockData } from '@/app/data/mockEnvironmentalData';
+import { getSpecificMockData } from '@/app/data/mockEnvironmentalData';
+import { analyzeWithGemini } from '@/app/services/api';
 import { Toaster } from '@/app/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -60,33 +61,24 @@ export default function App() {
 
   const handleCapture = async (imageData: string) => {
     setIsAnalyzing(true);
-    
-    // TODO: Replace with actual Gemini API call
-    // Example Gemini API integration:
-    // const response = await fetch('YOUR_DIGITALOCEAN_BACKEND/analyze', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ image: imageData })
-    // });
-    // const data = await response.json();
-    
-    // Mock delay to simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Get random mock data for demo purposes
-    const mockData = getMockEnvironmentalData(imageData);
-    
-    // TODO: Get audio narration from ElevenLabs
-    // const audioResponse = await fetch('YOUR_DIGITALOCEAN_BACKEND/narrate', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ text: mockData.explanation })
-    // });
-    // mockData.audioUrl = await audioResponse.text();
-    
-    setAnalysisData(mockData);
-    setIsAnalyzing(false);
     setShowCamera(false);
+    toast.loading('Analyzing with Gemini AI...', { id: 'analysis' });
+
+    try {
+      const analysisResult = await analyzeWithGemini(imageData);
+
+      setAnalysisData({
+        ...analysisResult,
+        imageUrl: imageData,
+      });
+
+      toast.success('Analysis complete!', { id: 'analysis' });
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      toast.error('Analysis failed. Please try again.', { id: 'analysis' });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleReset = () => {
