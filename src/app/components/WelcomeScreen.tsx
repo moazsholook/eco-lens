@@ -1,4 +1,19 @@
-import { Camera as CameraIcon, Sparkles, ScanBarcode } from 'lucide-react';
+import { 
+  Camera as CameraIcon, 
+  Sparkles, 
+  ScanBarcode,
+  Leaf,
+  Sprout,
+  Heart,
+  Recycle,
+  Coffee,
+  Laptop,
+  Footprints,
+  Smartphone,
+  UtensilsCrossed,
+  Shirt,
+  Bot
+} from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Card } from '@/app/components/ui/card';
 import { motion } from 'motion/react';
@@ -11,11 +26,13 @@ interface WelcomeScreenProps {
 
 // Particle component for floating leaves/eco elements
 function FloatingParticles() {
+  const iconComponents = [Leaf, Sprout, Heart, Sparkles, Recycle, Sprout];
+  
   const particles = useMemo(() => {
     return Array.from({ length: 32 }, (_, i) => ({
       id: i,
-      emoji: ['🍃', '🌿', '💚', '✨', '🌱', '♻️'][i % 6],
-      size: Math.random() * 18 + 14,
+      Icon: iconComponents[i % 6],
+      size: Math.random() * 12 + 8,
       left: Math.random() * 100,
       initialY: Math.random() * -80,
       delay: 0,
@@ -33,58 +50,62 @@ function FloatingParticles() {
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {particles.map((particle) => (
-        <motion.div
-          key={particle.id}
-          className="absolute"
-          style={{
-            left: `${particle.left}%`,
-            fontSize: particle.size,
-            top: 0,
-            opacity: particle.opacity,
-            filter: particle.blur ? `blur(${particle.blur}px)` : undefined,
-          }}
-          initial={{
-            y: `${particle.initialY}vh`,
-            x: particle.xOffset,
-            rotate: particle.rotateStart,
-            scale: particle.scale,
-          }}
-          animate={{
-            y: ['-10vh', '110vh'],
-            x: [
-              particle.xOffset,
-              particle.swayOffset,
-              -particle.swayOffset,
-              particle.xOffset,
-            ],
-            rotate: [particle.rotateStart, particle.rotateStart + particle.spin],
-            scale: [particle.scale, particle.scale + 0.08, particle.scale],
-            opacity: [0, particle.opacity, particle.opacity, 0],
-          }}
-          transition={{
-            duration: particle.duration,
-            repeat: Infinity,
-            delay: particle.delay,
-            ease: 'linear',
-            repeatDelay: particle.repeatDelay,
-          }}
-        >
-          {particle.emoji}
-        </motion.div>
-      ))}
+      {particles.map((particle) => {
+        const Icon = particle.Icon;
+        return (
+          <motion.div
+            key={particle.id}
+            className="absolute text-emerald-400"
+            style={{
+              left: `${particle.left}%`,
+              width: `${particle.size}px`,
+              height: `${particle.size}px`,
+              top: 0,
+              opacity: particle.opacity,
+              filter: particle.blur ? `blur(${particle.blur}px)` : undefined,
+            }}
+            initial={{
+              y: `${particle.initialY}vh`,
+              x: particle.xOffset,
+              rotate: particle.rotateStart,
+              scale: particle.scale,
+            }}
+            animate={{
+              y: ['-10vh', '110vh'],
+              x: [
+                particle.xOffset,
+                particle.swayOffset,
+                -particle.swayOffset,
+                particle.xOffset,
+              ],
+              rotate: [particle.rotateStart, particle.rotateStart + particle.spin],
+              scale: [particle.scale, particle.scale + 0.08, particle.scale],
+              opacity: [0, particle.opacity, particle.opacity, 0],
+            }}
+            transition={{
+              duration: particle.duration,
+              repeat: Infinity,
+              delay: particle.delay,
+              ease: 'linear',
+              repeatDelay: particle.repeatDelay,
+            }}
+          >
+            <Icon className="w-full h-full" />
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
 
 export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
   const examples = [
-    { emoji: '☕', label: 'Coffee Cup' },
-    { emoji: '💻', label: 'Laptop' },
-    { emoji: '👟', label: 'Shoes' },
-    { emoji: '📱', label: 'Phone' },
-    { emoji: '🍔', label: 'Food' },
-    { emoji: '👕', label: 'Clothing' }
+    { Icon: Coffee, label: 'Coffee Cup' },
+    { Icon: Laptop, label: 'Laptop' },
+    { Icon: Footprints, label: 'Shoes' },
+    { Icon: Smartphone, label: 'Phone' },
+    { Icon: UtensilsCrossed, label: 'Food' },
+    { Icon: Shirt, label: 'Clothing' }
   ];
 
   return (
@@ -101,7 +122,7 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
           <h2 className="text-5xl font-bold text-emerald-900 mb-4 animate-in fade-in duration-700 delay-100">
             Discover the True Cost
             <br />
-            of Everyday Objects 🌍
+            of Everyday Objects
           </h2>
           
           <p className="text-lg text-emerald-700 mb-8 animate-in fade-in duration-700 delay-200">
@@ -139,7 +160,7 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">📸</span>
+                <CameraIcon className="w-6 h-6 text-emerald-600" />
               </div>
               <p className="text-sm text-emerald-700">
                 <strong>Scan</strong><br />
@@ -148,7 +169,7 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">🤖</span>
+                <Bot className="w-6 h-6 text-emerald-600" />
               </div>
               <p className="text-sm text-emerald-700">
                 <strong>Analyze</strong><br />
@@ -157,7 +178,7 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span className="text-2xl">🌱</span>
+                <Sprout className="w-6 h-6 text-emerald-600" />
               </div>
               <p className="text-sm text-emerald-700">
                 <strong>Learn</strong><br />
@@ -186,7 +207,7 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
                   delay: index * 0.3,
                 }}
               >
-                <span className="text-2xl">{item.emoji}</span>
+                <item.Icon className="w-5 h-5 text-emerald-600" />
                 <span className="text-sm text-emerald-700">{item.label}</span>
               </motion.div>
             ))}
@@ -198,15 +219,15 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
           <p className="text-xs text-emerald-600 mb-3">Powered by</p>
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+              <Sparkles className="w-4 h-4 text-emerald-500" />
               <span className="text-emerald-700">Google Gemini AI</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+              <Sparkles className="w-4 h-4 text-teal-500" />
               <span className="text-emerald-700">ElevenLabs Voice</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <Sparkles className="w-4 h-4 text-blue-500" />
               <span className="text-emerald-700">DigitalOcean</span>
             </div>
           </div>

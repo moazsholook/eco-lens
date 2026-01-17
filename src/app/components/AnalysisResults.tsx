@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Volume2, VolumeX, Leaf, TrendingDown, Lightbulb, Recycle } from 'lucide-react';
+import { Camera, Volume2, VolumeX, Leaf, TrendingDown, Lightbulb, Recycle, AlertCircle, Settings, Mic, Cloud } from 'lucide-react';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { Progress } from '@/app/components/ui/progress';
 import { Separator } from '@/app/components/ui/separator';
 import { CarbonComparisons } from '@/app/components/CarbonComparisons';
+import { getCarbonImpactMetrics, getIdealAnnualFootprint, generateBellCurveData } from '@/app/utils/carbonImpact';
 import type { EnvironmentalData } from '@/app/App';
 
 interface AnalysisResultsProps {
@@ -36,13 +37,22 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
     }
   };
 
-  const getCarbonLevel = (value: number): { label: string; color: string; progress: number } => {
-    if (value < 50) return { label: 'Low Impact', color: 'bg-green-500', progress: 33 };
-    if (value < 200) return { label: 'Medium Impact', color: 'bg-yellow-500', progress: 66 };
-    return { label: 'High Impact', color: 'bg-red-500', progress: 100 };
-  };
-
-  const carbonLevel = getCarbonLevel(data.carbonValue);
+  // Get lifetime footprint-based impact metrics
+  const impactMetrics = getCarbonImpactMetrics(data.carbonValue);
+  const idealAnnual = getIdealAnnualFootprint();
+  
+  // Generate bell curve data for visualization
+  // Shows distribution of typical product carbon footprints (in kg CO2e)
+  // Most products fall in 0-100kg range, with mean around 10-20kg
+  const carbonKg = data.carbonValue / 1000;
+  const mean = 15; // Most products around 15kg
+  const stdDev = 20; // Standard deviation
+  const maxRange = 200; // Show up to 200kg on curve
+  const bellCurveData = generateBellCurveData(mean, stdDev, 0, maxRange, 200);
+  const maxY = Math.max(...bellCurveData.map(d => d.y));
+  
+  // Calculate position on bell curve (in kg)
+  const positionOnCurve = Math.min(maxRange, carbonKg);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -63,7 +73,7 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
                     <Badge className="bg-red-500 text-white">
                       {data.carbonFootprint}
                     </Badge>
-                    <span className="text-white/80 text-sm">{carbonLevel.label}</span>
+                    <span className="text-white/80 text-sm">{impactMetrics.label}</span>
                   </div>
                 </div>
                 <Button
@@ -93,16 +103,160 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
             />
           )}
 
-          {/* Carbon Impact Bar */}
+          {/* Carbon Impact Lifetime Visualization */}
           <div className="p-6 bg-white">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingDown className="w-5 h-5 text-emerald-600" />
-              <span className="font-semibold text-emerald-900">Carbon Footprint</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <TrendingDown className="w-5 h-5 text-emerald-600" />
+                <span className="font-semibold text-emerald-900">Lifetime Carbon Impact</span>
+              </div>
+              <Badge className={`${impactMetrics.color} text-white`}>
+                {impactMetrics.label}
+              </Badge>
             </div>
-            <Progress value={carbonLevel.progress} className="h-3 mb-2" />
-            <p className="text-xs text-gray-600">
-              Compared to similar products in its category
-            </p>
+            
+            {/* Bell Curve Visualization - Product Carbon Distribution */}
+            <div className="relative mb-6">
+              <div className="relative h-48 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <svg className="w-full h-full" viewBox="0 0 400 160" preserveAspectRatio="none">
+                  {/* Bell curve path */}
+                  <path
+                    d={bellCurveData.map((point, i) => {
+                      const x = (point.x / maxRange) * 400;
+                      const y = 160 - (point.y / maxY) * 140;
+                      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                    }).join(' ')}
+                    fill="none"
+                    stroke="url(#gradient)"
+                    strokeWidth="2"
+                    className="drop-shadow-sm"
+                  />
+                  
+                  {/* Gradient definition */}
+                  <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="50%" stopColor="#eab308" />
+                      <stop offset="100%" stopColor="#ef4444" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Fill area under curve */}
+                  <path
+                    d={`M 0 160 ${bellCurveData.map((point, i) => {
+                      const x = (point.x / maxRange) * 400;
+                      const y = 160 - (point.y / maxY) * 140;
+                      return `L ${x} ${y}`;
+                    }).join(' ')} L 400 160 Z`}
+                    fill="url(#gradient)"
+                    fillOpacity="0.2"
+                  />
+                  
+                  {/* Current position indicator */}
+                  <line
+                    x1={(positionOnCurve / maxRange) * 400}
+                    y1="0"
+                    x2={(positionOnCurve / maxRange) * 400}
+                    y2="160"
+                    stroke="#000"
+                    strokeWidth="2"
+                    strokeDasharray="4 4"
+                  />
+                  
+                  {/* Indicator dot */}
+                  <circle
+                    cx={(positionOnCurve / maxRange) * 400}
+                    cy={160 - ((bellCurveData[Math.min(Math.round((positionOnCurve / maxRange) * 200), 200)]?.y || 0) / maxY) * 140}
+                    r="6"
+                    fill="#000"
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                  
+                  {/* Labels on x-axis (kg CO2e) */}
+                  {[0, 25, 50, 100, 150, 200].filter(v => v <= maxRange).map((kg) => (
+                    <g key={kg}>
+                      <line
+                        x1={(kg / maxRange) * 400}
+                        y1="155"
+                        x2={(kg / maxRange) * 400}
+                        y2="160"
+                        stroke="#6b7280"
+                        strokeWidth="1"
+                      />
+                      <text
+                        x={(kg / maxRange) * 400}
+                        y="175"
+                        textAnchor="middle"
+                        className="text-xs fill-gray-600"
+                        fontSize="10"
+                      >
+                        {kg}kg
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+                
+                {/* Y-axis label */}
+                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 -rotate-90 text-xs text-gray-500">
+                  Product Frequency
+                </div>
+              </div>
+              
+              {/* X-axis label */}
+              <p className="text-center text-xs text-gray-500 mt-2">
+                Product Carbon Footprint (Full Lifecycle: Production + Usage + Disposal)
+              </p>
+            </div>
+            
+            {/* Impact description and stats */}
+            <div className="space-y-3">
+              <div className={`flex items-center gap-2 text-sm p-3 rounded-lg border ${
+                impactMetrics.severity === 'extreme' || impactMetrics.severity === 'very-high' 
+                  ? 'bg-red-50 border-red-200' 
+                  : impactMetrics.severity === 'high'
+                  ? 'bg-orange-50 border-orange-200'
+                  : impactMetrics.severity === 'moderate'
+                  ? 'bg-yellow-50 border-yellow-200'
+                  : 'bg-emerald-50 border-emerald-200'
+              }`}>
+                <AlertCircle className={`w-4 h-4 flex-shrink-0 ${
+                  impactMetrics.severity === 'extreme' || impactMetrics.severity === 'very-high'
+                    ? 'text-red-600'
+                    : impactMetrics.severity === 'high'
+                    ? 'text-orange-600'
+                    : impactMetrics.severity === 'moderate'
+                    ? 'text-yellow-600'
+                    : 'text-emerald-600'
+                }`} />
+                <span className="text-gray-700 font-medium">
+                  {impactMetrics.description}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Product Carbon</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {carbonKg >= 1 
+                      ? `${carbonKg.toFixed(1)}kg CO₂e`
+                      : `${data.carbonValue.toFixed(1)}g CO₂e`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Annual Budget</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    4.0 tons/year
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Annual Impact</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {impactMetrics.annualPercent.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
 
@@ -192,24 +346,33 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
         {/* Integration Notes */}
         <Card className="p-6 mb-6 border-blue-200 bg-blue-50">
           <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-            <span className="text-lg">🔧</span>
+            <Settings className="w-4 h-4" />
             Integration Instructions
           </h4>
           <div className="space-y-3 text-sm">
             <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <p className="font-medium text-blue-900 mb-2">📸 Gemini Vision API</p>
+              <p className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                Gemini Vision API
+              </p>
               <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
                 POST /api/analyze → Send image → Get object ID & environmental data
               </code>
             </div>
             <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <p className="font-medium text-blue-900 mb-2">🎙️ ElevenLabs TTS API</p>
+              <p className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                <Mic className="w-4 h-4" />
+                ElevenLabs TTS API
+              </p>
               <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
                 POST /api/narrate → Send explanation text → Get audio URL
               </code>
             </div>
             <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <p className="font-medium text-blue-900 mb-2">☁️ DigitalOcean Backend</p>
+              <p className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                <Cloud className="w-4 h-4" />
+                DigitalOcean Backend
+              </p>
               <p className="text-xs text-gray-600">
                 Host your API endpoints, object database, and inference logic on DigitalOcean
               </p>
