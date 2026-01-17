@@ -3,10 +3,17 @@ import { Camera } from '@/app/components/Camera';
 import { AnalysisResults } from '@/app/components/AnalysisResults';
 import { Header } from '@/app/components/Header';
 import { WelcomeScreen } from '@/app/components/WelcomeScreen';
+import { SignIn, SignUp } from '@/app/components/auth';
 import { getSpecificMockData } from '@/app/data/mockEnvironmentalData';
 import { analyzeWithGemini, generateNarration, lookupProductByBarcode, type ProductData } from '@/app/services/api';
 import { Toaster } from '@/app/components/ui/sonner';
 import { toast } from 'sonner';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
 
 export interface EnvironmentalData {
   objectName: string;
@@ -24,10 +31,100 @@ export interface EnvironmentalData {
 }
 
 export default function App() {
+  // Auth state
+  const [user, setUser] = useState<User | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // App state
   const [showCamera, setShowCamera] = useState(false);
   const [analysisData, setAnalysisData] = useState<EnvironmentalData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [barcodeMode, setBarcodeMode] = useState(false);
+
+  // Auth handlers
+  const handleSignIn = async (email: string, password: string) => {
+    setAuthLoading(true);
+    try {
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock successful sign in
+      setUser({
+        id: '1',
+        name: email.split('@')[0],
+        email: email
+      });
+      setShowAuth(false);
+      toast.success('Welcome back!');
+    } catch (error: any) {
+      throw new Error(error.message || 'Sign in failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignUp = async (name: string, email: string, password: string) => {
+    setAuthLoading(true);
+    try {
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock successful sign up
+      setUser({
+        id: '1',
+        name: name,
+        email: email
+      });
+      setShowAuth(false);
+      toast.success('Account created successfully!');
+    } catch (error: any) {
+      throw new Error(error.message || 'Sign up failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    setUser(null);
+    setAnalysisData(null);
+    toast.info('Signed out');
+  };
+
+  const handleShowSignIn = () => {
+    setAuthView('signin');
+    setShowAuth(true);
+  };
+
+  const handleShowSignUp = () => {
+    setAuthView('signup');
+    setShowAuth(true);
+  };
+
+  // Show auth pages when user chooses to sign in/up
+  if (showAuth) {
+    return (
+      <>
+        <Toaster position="top-center" richColors />
+        {authView === 'signin' ? (
+          <SignIn
+            onSignIn={handleSignIn}
+            onSwitchToSignUp={() => setAuthView('signup')}
+            onBack={() => setShowAuth(false)}
+            isLoading={authLoading}
+          />
+        ) : (
+          <SignUp
+            onSignUp={handleSignUp}
+            onSwitchToSignIn={() => setAuthView('signin')}
+            onBack={() => setShowAuth(false)}
+            isLoading={authLoading}
+          />
+        )}
+      </>
+    );
+  }
 
   const handleStartScanning = () => {
     setBarcodeMode(false);
@@ -85,7 +182,8 @@ Analyze this product's environmental impact.`;
       
       if (productData.images?.[0]) {
         // Use image if available
-        analysisResult = await analyzeWithGemini(productData.images[0]);
+        const analysis = await analyzeWithGemini(productData.images[0]);
+        analysisResult = { ...analysis, imageUrl: productData.images[0] };
       } else {
         // Create analysis based on product info (enhanced mock data)
         const mockData = getSpecificMockData('bottle', imageUrl); // Fallback to bottle
@@ -191,7 +289,14 @@ Analyze this product's environmental impact.`;
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
       <Toaster position="top-center" richColors />
-      <Header onReset={handleReset} showReset={!!analysisData} onDemoSelect={handleDemoSelect} />
+      <Header 
+        onReset={handleReset} 
+        showReset={!!analysisData} 
+        onDemoSelect={handleDemoSelect}
+        user={user}
+        onSignIn={handleShowSignIn}
+        onSignOut={handleSignOut}
+      />
       
       {!showCamera && !analysisData && !isAnalyzing && (
         <WelcomeScreen onStart={handleStartScanning} onBarcodeScan={handleStartBarcodeScanning} />
