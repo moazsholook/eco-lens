@@ -229,7 +229,7 @@ export function ProfileDashboard({
         {/* Top Row: Carbon Human + Stats + Category Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Eco Score Human */}
-          <Card className="p-5 border-emerald-200 bg-white/70 backdrop-blur overflow-hidden flex flex-col">
+          <Card className="p-5 border-emerald-200 bg-white/70 backdrop-blur overflow-hidden flex flex-col min-h-[480px]">
             <div className="text-center mb-2">
               <p className="text-xs uppercase tracking-wide text-emerald-500">
                 Eco Score
@@ -242,10 +242,10 @@ export function ProfileDashboard({
               </div>
             </div>
 
-            <div className="relative flex-1 flex items-center justify-center py-4">
+            <div className="relative flex-1 flex items-center justify-center">
               <svg
-                viewBox="0 0 100 180"
-                className="h-64 w-auto"
+                viewBox="0 0 100 150"
+                style={{ width: '180px', height: '270px' }}
                 aria-label="Eco score human meter"
               >
                 <defs>
