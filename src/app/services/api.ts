@@ -1,8 +1,10 @@
 // API Integration Layer for EcoLens
-// Using OpenAI GPT-4 Vision API for image analysis
+// Using OpenAI GPT-4 Vision API for image analysis and ElevenLabs for TTS
 
 // @ts-expect-error Vite env types
 const OPENAI_API_KEY: string = import.meta.env.VITE_OPENAI_API_KEY || '';
+// @ts-expect-error Vite env types
+const ELEVENLABS_API_KEY: string = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
 
 export interface AnalysisResponse {
   objectName: string;
@@ -119,6 +121,55 @@ export async function analyzeWithGemini(imageData: string): Promise<AnalysisResp
 
   } catch (error) {
     console.error('OpenAI API error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate audio narration using ElevenLabs TTS API
+ */
+export async function generateNarration(text: string): Promise<string> {
+  if (!ELEVENLABS_API_KEY) {
+    throw new Error('ElevenLabs API key not configured');
+  }
+
+  try {
+    // Using "Rachel" voice - available on free tier
+    const voiceId = '21m00Tcm4TlvDq8ikWAM';
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVENLABS_API_KEY
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.6,
+            similarity_boost: 0.75
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('ElevenLabs API error:', errorText);
+      throw new Error(`ElevenLabs API error: ${response.status}`);
+    }
+
+    // Convert audio blob to URL
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    return audioUrl;
+
+  } catch (error) {
+    console.error('ElevenLabs API error:', error);
     throw error;
   }
 }

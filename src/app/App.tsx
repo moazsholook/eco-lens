@@ -4,7 +4,7 @@ import { AnalysisResults } from '@/app/components/AnalysisResults';
 import { Header } from '@/app/components/Header';
 import { WelcomeScreen } from '@/app/components/WelcomeScreen';
 import { getSpecificMockData } from '@/app/data/mockEnvironmentalData';
-import { analyzeWithGemini } from '@/app/services/api';
+import { analyzeWithGemini, generateNarration } from '@/app/services/api';
 import { Toaster } from '@/app/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -62,14 +62,24 @@ export default function App() {
   const handleCapture = async (imageData: string) => {
     setIsAnalyzing(true);
     setShowCamera(false);
-    toast.loading('Analyzing with Gemini AI...', { id: 'analysis' });
+    toast.loading('Analyzing image...', { id: 'analysis' });
 
     try {
       const analysisResult = await analyzeWithGemini(imageData);
 
+      // Generate voice narration
+      toast.loading('Generating narration...', { id: 'analysis' });
+      let audioUrl: string | undefined;
+      try {
+        audioUrl = await generateNarration(analysisResult.explanation);
+      } catch (audioError) {
+        console.warn('Audio generation failed, continuing without narration:', audioError);
+      }
+
       setAnalysisData({
         ...analysisResult,
         imageUrl: imageData,
+        audioUrl,
       });
 
       toast.success('Analysis complete!', { id: 'analysis' });
