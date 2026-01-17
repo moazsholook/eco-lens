@@ -81,8 +81,7 @@ const userSchema = new mongoose.Schema({
   collection: 'users'
 });
 
-// Index for faster email lookups
-userSchema.index({ email: 1 });
+// Note: email index is already created by `unique: true` above
 
 // Virtual for checking if user is on track for daily goal
 userSchema.virtual('isOnTrack').get(function() {

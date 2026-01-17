@@ -4,7 +4,12 @@ import { AnalysisResults } from '@/app/components/AnalysisResults';
 import { Header } from '@/app/components/Header';
 import { WelcomeScreen } from '@/app/components/WelcomeScreen';
 import { getSpecificMockData } from '@/app/data/mockEnvironmentalData';
-import { analyzeWithGemini, generateNarration, lookupProductByBarcode, type ProductData } from '@/app/services/api';
+import { 
+  analyzeWithGemini, 
+  generateNarration, 
+  lookupProductByBarcode, 
+  saveEmission
+} from '@/app/services/api';
 import { Toaster } from '@/app/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -28,6 +33,7 @@ export default function App() {
   const [analysisData, setAnalysisData] = useState<EnvironmentalData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [barcodeMode, setBarcodeMode] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const handleStartScanning = () => {
     setBarcodeMode(false);
@@ -85,7 +91,8 @@ Analyze this product's environmental impact.`;
       
       if (productData.images?.[0]) {
         // Use image if available
-        analysisResult = await analyzeWithGemini(productData.images[0]);
+        const analysis = await analyzeWithGemini(productData.images[0]);
+        analysisResult = { ...analysis, imageUrl: productData.images[0] };
       } else {
         // Create analysis based on product info (enhanced mock data)
         const mockData = getSpecificMockData('bottle', imageUrl); // Fallback to bottle
@@ -168,6 +175,24 @@ Analyze this product's environmental impact.`;
         console.warn('Audio generation failed, continuing without narration:', audioError);
       }
 
+      try {
+        await saveEmission({
+          userId: userId ?? "696c175caa25d65884c9db79",
+          imageUrl: imageData,
+          objectName: analysisResult.objectName,
+          category: detectCategory(analysisResult.objectName),
+          carbonValue: analysisResult.carbonValue,
+          carbonFootprint: analysisResult.carbonFootprint,
+          lifecycle: analysisResult.lifecycle,
+          explanation: analysisResult.explanation,
+          alternatives: analysisResult.alternatives,
+        });
+        console.log('💾 Emission saved to database');
+      } catch (saveError) {
+        console.warn('Could not save to database:', saveError);
+        // Don't fail the whole flow if save fails
+      }
+
       setAnalysisData({
         ...analysisResult,
         imageUrl: imageData,
@@ -181,6 +206,18 @@ Analyze this product's environmental impact.`;
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Helper to detect category from object name
+  const detectCategory = (objectName: string): string => {
+    const name = objectName.toLowerCase();
+    if (name.includes('bottle') || name.includes('drink') || name.includes('coffee') || name.includes('cup') || name.includes('water')) return 'beverage';
+    if (name.includes('shirt') || name.includes('pants') || name.includes('dress') || name.includes('jacket') || name.includes('shoe')) return 'clothing';
+    if (name.includes('phone') || name.includes('laptop') || name.includes('computer') || name.includes('tablet')) return 'electronics';
+    if (name.includes('food') || name.includes('fruit') || name.includes('meat') || name.includes('vegetable') || name.includes('banana') || name.includes('apple')) return 'food';
+    if (name.includes('bag') || name.includes('package') || name.includes('box') || name.includes('wrapper')) return 'packaging';
+    if (name.includes('car') || name.includes('bus') || name.includes('bike') || name.includes('plane')) return 'transportation';
+    return 'other';
   };
 
   const handleReset = () => {

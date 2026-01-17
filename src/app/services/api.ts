@@ -5,6 +5,8 @@
 const OPENAI_API_KEY: string = import.meta.env.VITE_OPENAI_API_KEY || '';
 // @ts-expect-error Vite env types
 const ELEVENLABS_API_KEY: string = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
+// @ts-expect-error Vite env types
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 /**
  * Product data from Open Product Data API
@@ -264,6 +266,93 @@ export async function generateNarration(text: string): Promise<string> {
     console.error('ElevenLabs API error:', error);
     throw error;
   }
+}
+
+// ============================================
+// DATABASE API FUNCTIONS
+// ============================================
+
+export interface SaveEmissionRequest {
+  userId: string;
+  imageUrl?: string;
+  objectName: string;
+  category?: string;
+  carbonValue: number;
+  carbonFootprint: string;
+  lifecycle?: string[];
+  explanation?: string;
+  alternatives?: { name: string; benefit: string; carbonSavings: string }[];
+  quantity?: number;
+}
+
+export interface EmissionResponse {
+  _id: string;
+  userId: string;
+  objectName: string;
+  carbonValue: number;
+  carbonFootprint: string;
+  category: string;
+  scannedAt: string;
+  date: string;
+}
+
+export interface DailyEmissionsResponse {
+  date: string;
+  emissions: EmissionResponse[];
+  totalCO2: number;
+  count: number;
+}
+
+export interface UserResponse {
+  _id: string;
+  email: string;
+  name: string;
+  dailyCO2Goal: number;
+  stats: {
+    totalScans: number;
+    totalCO2: number;
+    streakDays: number;
+  };
+}
+
+/**
+ * Save emission to database after analysis
+ */
+export async function saveEmission(data: SaveEmissionRequest): Promise<EmissionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/emissions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to save emission');
+  }
+  
+  return response.json();
+}
+
+/**
+ * Get today's emissions for a user
+ */
+export async function getTodayEmissions(userId: string): Promise<DailyEmissionsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/emissions/today/${userId}`);
+  if (!response.ok) {
+    throw new Error('Failed to get today emissions');
+  }
+  return response.json();
+}
+
+/**
+ * Get emission history for a user
+ */
+export async function getEmissionHistory(userId: string, days: number = 7): Promise<any[]> {
+  const response = await fetch(`${API_BASE_URL}/api/emissions/history/${userId}?days=${days}`);
+  if (!response.ok) {
+    throw new Error('Failed to get emission history');
+  }
+  return response.json();
 }
 
 /**
