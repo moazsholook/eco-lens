@@ -3,6 +3,7 @@ import { Camera } from '@/app/components/Camera';
 import { AnalysisResults } from '@/app/components/AnalysisResults';
 import { Header } from '@/app/components/Header';
 import { WelcomeScreen } from '@/app/components/WelcomeScreen';
+import { Target, Flame, Sprout } from 'lucide-react';
 import { 
   ProfileDashboard, 
   type UsagePeriod, 
@@ -155,9 +156,9 @@ export default function App() {
   ];
 
   const profileBadges: Badge[] = [
-    { id: '1', name: 'First Scan', description: 'Complete your first scan', icon: '🎯', earned: (dashboardStats?.metrics.totalScans || 0) > 0 },
-    { id: '2', name: 'Week Warrior', description: 'Scan for 7 days straight', icon: '🔥', earned: false, progress: user?.stats?.streakDays || 0, total: 7 },
-    { id: '3', name: 'Eco Explorer', description: 'Scan 10 different items', icon: '🌱', earned: (dashboardStats?.metrics.totalScans || 0) >= 10, progress: dashboardStats?.metrics.totalScans || 0, total: 10 },
+    { id: '1', name: 'First Scan', description: 'Complete your first scan', icon: <Target className="w-8 h-8" />, earned: (dashboardStats?.metrics.totalScans || 0) > 0 },
+    { id: '2', name: 'Week Warrior', description: 'Scan for 7 days straight', icon: <Flame className="w-8 h-8" />, earned: false, progress: user?.stats?.streakDays || 0, total: 7 },
+    { id: '3', name: 'Eco Explorer', description: 'Scan 10 different items', icon: <Sprout className="w-8 h-8" />, earned: (dashboardStats?.metrics.totalScans || 0) >= 10, progress: dashboardStats?.metrics.totalScans || 0, total: 10 },
   ];
 
   const profileCategoryBreakdown: CategoryBreakdown[] = categoryBreakdown.length > 0 
@@ -171,6 +172,48 @@ export default function App() {
     'Choose locally sourced products',
     'Extend product life with proper care',
   ];
+
+  // Calculate dynamic Eco Score (0-100)
+  // Higher score = more eco-friendly behavior
+  const calculateEcoScore = (): number => {
+    let score = 50; // Start at baseline
+    
+    const budgetKg = (user?.dailyCO2Goal || 8000) / 1000; // Daily budget in kg
+    const usedKg = dashboardStats?.metrics.footprintKg || 0;
+    const totalScans = dashboardStats?.metrics.totalScans || 0;
+    const streakDays = user?.stats?.streakDays || 0;
+    const improvementPercent = dashboardStats?.metrics.improvementPercent || 0;
+    
+    // Factor 1: Carbon efficiency (up to 40 points)
+    // Under budget = gain points, over budget = lose points
+    if (budgetKg > 0) {
+      const usageRatio = usedKg / budgetKg;
+      if (usageRatio <= 1) {
+        // Under budget: 0-40 bonus points (less usage = more points)
+        score += Math.round((1 - usageRatio) * 40);
+      } else {
+        // Over budget: lose points (up to -40)
+        score -= Math.min(40, Math.round((usageRatio - 1) * 40));
+      }
+    }
+    
+    // Factor 2: Engagement bonus (up to 20 points)
+    // More scans = more awareness = better score
+    score += Math.min(20, totalScans * 2);
+    
+    // Factor 3: Streak bonus (up to 15 points)
+    // Consistent tracking = better habits
+    score += Math.min(15, streakDays * 2);
+    
+    // Factor 4: Improvement bonus (up to 15 points)
+    // Getting better over time
+    score += Math.min(15, Math.round(improvementPercent / 5));
+    
+    // Clamp between 0 and 100
+    return Math.max(0, Math.min(100, Math.round(score)));
+  };
+
+  const ecoScore = calculateEcoScore();
 
   // Check for existing session on app load
   useEffect(() => {
@@ -457,13 +500,14 @@ Analyze this product's environmental impact.`;
         user={user}
         onSignIn={handleShowSignIn}
         onSignOut={handleSignOut}
+        hideUserControls={!!analysisData}
       />
       
       {!showCamera && !analysisData && !isAnalyzing && (
         user ? (
           <ProfileDashboard
             displayName={user.name}
-            humanFillPercent={Math.min(((dashboardStats?.metrics.footprintKg || 0) / ((user.dailyCO2Goal || 8000) / 1000)) * 100, 100)}
+            humanFillPercent={ecoScore}
             selectedPeriod={selectedPeriod}
             periods={profilePeriods}
             trendSeries={profileTrendSeries}
