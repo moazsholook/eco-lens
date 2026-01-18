@@ -14,6 +14,7 @@ interface CameraProps {
 export function Camera({ onCapture, onClose, isAnalyzing, onBarcodeDetected, enableBarcodeScan = false }: CameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
@@ -84,6 +85,11 @@ export function Camera({ onCapture, onClose, isAnalyzing, onBarcodeDetected, ena
 
   const startCamera = async () => {
     try {
+      // Stop any existing stream first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: facingMode },
         audio: false
@@ -93,6 +99,7 @@ export function Camera({ onCapture, onClose, isAnalyzing, onBarcodeDetected, ena
         videoRef.current.srcObject = mediaStream;
       }
       
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       setError('');
     } catch (err) {
@@ -102,9 +109,19 @@ export function Camera({ onCapture, onClose, isAnalyzing, onBarcodeDetected, ena
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+    // Use ref to ensure we have the latest stream reference
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log('🎥 Camera track stopped:', track.kind);
+      });
+      streamRef.current = null;
     }
+    // Also clear the video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setStream(null);
   };
 
   const captureImage = () => {
@@ -119,6 +136,8 @@ export function Camera({ onCapture, onClose, isAnalyzing, onBarcodeDetected, ena
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        // Stop the camera immediately after capture
+        stopCamera();
         onCapture(imageData);
       }
     }
@@ -160,7 +179,10 @@ export function Camera({ onCapture, onClose, isAnalyzing, onBarcodeDetected, ena
         {/* Top Bar */}
         <div className="bg-gradient-to-b from-black/60 to-transparent p-4 flex items-center justify-between">
           <Button
-            onClick={onClose}
+            onClick={() => {
+              stopCamera();
+              onClose();
+            }}
             variant="ghost"
             size="icon"
             className="text-white hover:bg-white/20"

@@ -3,6 +3,16 @@ import { Camera } from '@/app/components/Camera';
 import { AnalysisResults } from '@/app/components/AnalysisResults';
 import { Header } from '@/app/components/Header';
 import { WelcomeScreen } from '@/app/components/WelcomeScreen';
+import { 
+  ProfileDashboard, 
+  type UsagePeriod, 
+  type UsageMetrics, 
+  type UsageTrendPoint,
+  type UsageInsight,
+  type Badge,
+  type RecentScan,
+  type CategoryBreakdown
+} from '@/app/components/ProfileDashboard';
 import { SignIn, SignUp } from '@/app/components/auth';
 import { getSpecificMockData } from '@/app/data/mockEnvironmentalData';
 import { 
@@ -14,7 +24,13 @@ import {
   registerUser,
   getCurrentUser,
   logoutUser,
-  type AuthUser
+  getDashboardStats,
+  getRecentScans,
+  getCategoryBreakdown,
+  type AuthUser,
+  type DashboardStats,
+  type RecentScan as ApiRecentScan,
+  type CategoryBreakdown as ApiCategoryBreakdown
 } from '@/app/services/api';
 import { Toaster } from '@/app/components/ui/sonner';
 import { toast } from 'sonner';
@@ -46,6 +62,115 @@ export default function App() {
   const [analysisData, setAnalysisData] = useState<EnvironmentalData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [barcodeMode, setBarcodeMode] = useState(false);
+
+  // Profile dashboard state
+  const [selectedPeriod, setSelectedPeriod] = useState<UsagePeriod>('weekly');
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [recentScans, setRecentScans] = useState<ApiRecentScan[]>([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState<ApiCategoryBreakdown[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
+
+  // Fetch dashboard data when user logs in, period changes, or after new scan
+  useEffect(() => {
+    if (user) {
+      const fetchDashboardData = async () => {
+        setDashboardLoading(true);
+        try {
+          const [stats, scans, breakdown] = await Promise.all([
+            getDashboardStats(user.id, selectedPeriod),
+            getRecentScans(user.id, 5),
+            getCategoryBreakdown(user.id, selectedPeriod === 'yearly' ? 365 : selectedPeriod === 'monthly' ? 30 : 7)
+          ]);
+          setDashboardStats(stats);
+          setRecentScans(scans);
+          setCategoryBreakdown(breakdown);
+        } catch (error) {
+          console.warn('Could not fetch dashboard data:', error);
+        } finally {
+          setDashboardLoading(false);
+        }
+      };
+      fetchDashboardData();
+    }
+  }, [user, selectedPeriod, dashboardRefreshKey]);
+
+  // Profile dashboard data - use real data if available, fallback to defaults
+  const profilePeriods: Record<UsagePeriod, UsageMetrics> = {
+    weekly: dashboardStats && selectedPeriod === 'weekly' ? dashboardStats.metrics : {
+      label: 'Weekly',
+      totalScans: 0,
+      footprintKg: 0,
+      improvementPercent: 0,
+      topCategory: 'None',
+      topItem: 'None',
+      comparisonText: "Start scanning to track your progress!",
+    },
+    monthly: dashboardStats && selectedPeriod === 'monthly' ? dashboardStats.metrics : {
+      label: 'Monthly',
+      totalScans: 0,
+      footprintKg: 0,
+      improvementPercent: 0,
+      topCategory: 'None',
+      topItem: 'None',
+      comparisonText: "Start scanning to track your progress!",
+    },
+    yearly: dashboardStats && selectedPeriod === 'yearly' ? dashboardStats.metrics : {
+      label: 'Yearly',
+      totalScans: 0,
+      footprintKg: 0,
+      improvementPercent: 0,
+      topCategory: 'None',
+      topItem: 'None',
+      comparisonText: "Start scanning to track your progress!",
+    },
+  };
+
+  const profileTrendSeries: Record<UsagePeriod, UsageTrendPoint[]> = {
+    weekly: dashboardStats && selectedPeriod === 'weekly' ? dashboardStats.trendData : [],
+    monthly: dashboardStats && selectedPeriod === 'monthly' ? dashboardStats.trendData : [],
+    yearly: dashboardStats && selectedPeriod === 'yearly' ? dashboardStats.trendData : [],
+  };
+
+  const profileInsights: UsageInsight[] = dashboardStats ? [
+    { 
+      title: 'Top Category', 
+      detail: `${dashboardStats.metrics.topCategory} is your biggest impact area.`, 
+      trend: 'flat' as const
+    },
+    { 
+      title: 'Progress', 
+      detail: dashboardStats.metrics.improvementPercent > 0 
+        ? `You've improved ${dashboardStats.metrics.improvementPercent}% this period!` 
+        : 'Keep scanning to track your improvement.', 
+      trend: dashboardStats.metrics.improvementPercent > 0 ? 'down' as const : 'flat' as const 
+    },
+    { 
+      title: 'Most Scanned', 
+      detail: `${dashboardStats.metrics.topItem} appears most in your scans.`, 
+      trend: 'flat' as const 
+    },
+  ] : [
+    { title: 'Get Started', detail: 'Scan your first item to see insights!', trend: 'flat' },
+  ];
+
+  const profileBadges: Badge[] = [
+    { id: '1', name: 'First Scan', description: 'Complete your first scan', icon: '🎯', earned: (dashboardStats?.metrics.totalScans || 0) > 0 },
+    { id: '2', name: 'Week Warrior', description: 'Scan for 7 days straight', icon: '🔥', earned: false, progress: user?.stats?.streakDays || 0, total: 7 },
+    { id: '3', name: 'Eco Explorer', description: 'Scan 10 different items', icon: '🌱', earned: (dashboardStats?.metrics.totalScans || 0) >= 10, progress: dashboardStats?.metrics.totalScans || 0, total: 10 },
+  ];
+
+  const profileCategoryBreakdown: CategoryBreakdown[] = categoryBreakdown.length > 0 
+    ? categoryBreakdown 
+    : [];
+
+  const profileRecentScans: RecentScan[] = recentScans;
+
+  const profileTips = [
+    'Try reusable containers for takeout',
+    'Choose locally sourced products',
+    'Extend product life with proper care',
+  ];
 
   // Check for existing session on app load
   useEffect(() => {
@@ -284,6 +409,8 @@ Analyze this product's environmental impact.`;
             alternatives: analysisResult.alternatives,
           });
           console.log('💾 Emission saved to database');
+          // Trigger dashboard refresh when user returns
+          setDashboardRefreshKey(k => k + 1);
         } catch (saveError) {
           console.warn('Could not save to database:', saveError);
         }
@@ -334,7 +461,25 @@ Analyze this product's environmental impact.`;
       />
       
       {!showCamera && !analysisData && !isAnalyzing && (
-        <WelcomeScreen onStart={handleStartScanning} onBarcodeScan={handleStartBarcodeScanning} />
+        user ? (
+          <ProfileDashboard
+            displayName={user.name}
+            humanFillPercent={Math.min(((dashboardStats?.metrics.footprintKg || 0) / ((user.dailyCO2Goal || 8000) / 1000)) * 100, 100)}
+            selectedPeriod={selectedPeriod}
+            periods={profilePeriods}
+            trendSeries={profileTrendSeries}
+            insights={profileInsights}
+            badges={profileBadges}
+            recentScans={profileRecentScans}
+            categoryBreakdown={profileCategoryBreakdown}
+            streakDays={user.stats?.streakDays || 0}
+            tips={profileTips}
+            onPeriodChange={setSelectedPeriod}
+            onStartScanning={handleStartScanning}
+          />
+        ) : (
+          <WelcomeScreen onStart={handleStartScanning} onBarcodeScan={handleStartBarcodeScanning} />
+        )
       )}
       
       {showCamera && (
