@@ -520,6 +520,79 @@ export async function getEmissionHistory(userId: string, days: number = 7): Prom
   return response.json();
 }
 
+// ============================================
+// DASHBOARD API
+// ============================================
+
+export interface RecentScan {
+  id: string;
+  itemName: string;
+  category: string;
+  impactKg: number;
+  scannedAt: string;
+  imageUrl?: string;
+}
+
+export interface CategoryBreakdown {
+  category: string;
+  percentage: number;
+  impactKg: number;
+  color: string;
+}
+
+export interface DashboardMetrics {
+  label: string;
+  totalScans: number;
+  footprintKg: number;
+  improvementPercent: number;
+  topCategory: string;
+  topItem: string;
+  comparisonText: string;
+}
+
+export interface TrendDataPoint {
+  label: string;
+  value: number;
+}
+
+export interface DashboardStats {
+  metrics: DashboardMetrics;
+  trendData: TrendDataPoint[];
+}
+
+/**
+ * Get recent scans for user
+ */
+export async function getRecentScans(userId: string, limit: number = 10): Promise<RecentScan[]> {
+  const response = await fetch(`${API_BASE_URL}/api/emissions/recent/${userId}?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error('Failed to get recent scans');
+  }
+  return response.json();
+}
+
+/**
+ * Get category breakdown for user
+ */
+export async function getCategoryBreakdown(userId: string, days: number = 30): Promise<CategoryBreakdown[]> {
+  const response = await fetch(`${API_BASE_URL}/api/emissions/breakdown/${userId}?days=${days}`);
+  if (!response.ok) {
+    throw new Error('Failed to get category breakdown');
+  }
+  return response.json();
+}
+
+/**
+ * Get dashboard stats by period
+ */
+export async function getDashboardStats(userId: string, period: 'weekly' | 'monthly' | 'yearly' = 'weekly'): Promise<DashboardStats> {
+  const response = await fetch(`${API_BASE_URL}/api/dashboard/stats/${userId}?period=${period}`);
+  if (!response.ok) {
+    throw new Error('Failed to get dashboard stats');
+  }
+  return response.json();
+}
+
 /**
  * Lookup product information by barcode using Open Product Data API
  * @param barcode - The barcode (UPC/EAN) to lookup

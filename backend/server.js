@@ -302,6 +302,243 @@ app.get('/api/emissions/history/:userId', async (req, res) => {
 });
 
 // ============================================
+// DASHBOARD STATS ROUTES
+// ============================================
+
+// Get recent scans for user
+app.get('/api/emissions/recent/:userId', async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    const emissions = await Emission.find({ userId: req.params.userId })
+      .sort({ scannedAt: -1 })
+      .limit(parseInt(limit));
+
+    const recentScans = emissions.map(e => ({
+      id: e._id,
+      itemName: e.objectName,
+      category: e.category || 'other',
+      impactKg: e.carbonValue / 1000,
+      scannedAt: e.scannedAt,
+      imageUrl: e.imageUrl
+    }));
+
+    res.json(recentScans);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get recent scans' });
+  }
+});
+
+// Get category breakdown
+app.get('/api/emissions/breakdown/:userId', async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+
+    const emissions = await Emission.find({
+      userId: req.params.userId,
+      scannedAt: { $gte: startDate }
+    });
+
+    // Aggregate by category
+    const categoryTotals = {};
+    let totalCO2 = 0;
+
+    emissions.forEach(e => {
+      const cat = e.category || 'other';
+      if (!categoryTotals[cat]) {
+        categoryTotals[cat] = 0;
+      }
+      categoryTotals[cat] += e.carbonValue;
+      totalCO2 += e.carbonValue;
+    });
+
+    // Convert to breakdown format
+    const colors = {
+      food: '#10b981',
+      beverage: '#14b8a6',
+      clothing: '#0d9488',
+      electronics: '#059669',
+      transportation: '#047857',
+      household: '#065f46',
+      packaging: '#064e3b',
+      other: '#6b7280'
+    };
+
+    const breakdown = Object.entries(categoryTotals).map(([category, co2]) => ({
+      category: category.charAt(0).toUpperCase() + category.slice(1),
+      percentage: totalCO2 > 0 ? Math.round((co2 / totalCO2) * 100) : 0,
+      impactKg: co2 / 1000,
+      color: colors[category] || colors.other
+    })).sort((a, b) => b.percentage - a.percentage);
+
+    res.json(breakdown);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get category breakdown' });
+  }
+});
+
+// Get dashboard stats by period
+app.get('/api/dashboard/stats/:userId', async (req, res) => {
+  try {
+    const { period = 'weekly' } = req.query;
+    const userId = req.params.userId;
+    
+    // Calculate date ranges
+    const now = new Date();
+    let startDate, previousStartDate, periodDays;
+    
+    if (period === 'weekly') {
+      periodDays = 7;
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+      previousStartDate = new Date(startDate);
+      previousStartDate.setDate(startDate.getDate() - 7);
+    } else if (period === 'monthly') {
+      periodDays = 30;
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
+      previousStartDate = new Date(startDate);
+      previousStartDate.setDate(startDate.getDate() - 30);
+    } else {
+      periodDays = 365;
+      startDate = new Date(now);
+      startDate.setFullYear(now.getFullYear() - 1);
+      previousStartDate = new Date(startDate);
+      previousStartDate.setFullYear(startDate.getFullYear() - 1);
+    }
+
+    // Get current period emissions
+    const currentEmissions = await Emission.find({
+      userId,
+      scannedAt: { $gte: startDate }
+    });
+
+    // Get previous period emissions for comparison
+    const previousEmissions = await Emission.find({
+      userId,
+      scannedAt: { $gte: previousStartDate, $lt: startDate }
+    });
+
+    // Calculate stats
+    const totalScans = currentEmissions.length;
+    const totalCO2 = currentEmissions.reduce((sum, e) => sum + e.carbonValue, 0);
+    const previousCO2 = previousEmissions.reduce((sum, e) => sum + e.carbonValue, 0);
+    
+    // Calculate improvement (positive = better, negative = worse)
+    let improvementPercent = 0;
+    if (previousCO2 > 0) {
+      improvementPercent = Math.round(((previousCO2 - totalCO2) / previousCO2) * 100);
+    }
+
+    // Find top category
+    const categoryTotals = {};
+    currentEmissions.forEach(e => {
+      const cat = e.category || 'other';
+      if (!categoryTotals[cat]) categoryTotals[cat] = { count: 0, co2: 0, items: {} };
+      categoryTotals[cat].count++;
+      categoryTotals[cat].co2 += e.carbonValue;
+      categoryTotals[cat].items[e.objectName] = (categoryTotals[cat].items[e.objectName] || 0) + 1;
+    });
+
+    let topCategory = 'None';
+    let topItem = 'None';
+    let maxCO2 = 0;
+
+    Object.entries(categoryTotals).forEach(([cat, data]) => {
+      if (data.co2 > maxCO2) {
+        maxCO2 = data.co2;
+        topCategory = cat.charAt(0).toUpperCase() + cat.slice(1);
+        // Find most scanned item in this category
+        const items = Object.entries(data.items);
+        if (items.length > 0) {
+          topItem = items.sort((a, b) => b[1] - a[1])[0][0];
+        }
+      }
+    });
+
+    // Generate trend data
+    const trendData = [];
+    if (period === 'weekly') {
+      // Daily data for week
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(now.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayEmissions = currentEmissions.filter(e => 
+          e.date === dateStr || e.scannedAt.toISOString().split('T')[0] === dateStr
+        );
+        const dayCO2 = dayEmissions.reduce((sum, e) => sum + e.carbonValue, 0);
+        trendData.push({
+          label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+          value: dayCO2 / 1000
+        });
+      }
+    } else if (period === 'monthly') {
+      // Weekly data for month
+      for (let i = 3; i >= 0; i--) {
+        const weekEnd = new Date(now);
+        weekEnd.setDate(now.getDate() - (i * 7));
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekEnd.getDate() - 7);
+        
+        const weekEmissions = currentEmissions.filter(e => 
+          e.scannedAt >= weekStart && e.scannedAt <= weekEnd
+        );
+        const weekCO2 = weekEmissions.reduce((sum, e) => sum + e.carbonValue, 0);
+        trendData.push({
+          label: `W${4 - i}`,
+          value: weekCO2 / 1000
+        });
+      }
+    } else {
+      // Monthly data for year
+      for (let i = 5; i >= 0; i--) {
+        const monthEnd = new Date(now);
+        monthEnd.setMonth(now.getMonth() - i);
+        const monthStart = new Date(monthEnd);
+        monthStart.setMonth(monthEnd.getMonth() - 1);
+        
+        const monthEmissions = currentEmissions.filter(e => 
+          e.scannedAt >= monthStart && e.scannedAt <= monthEnd
+        );
+        const monthCO2 = monthEmissions.reduce((sum, e) => sum + e.carbonValue, 0);
+        trendData.push({
+          label: monthEnd.toLocaleDateString('en-US', { month: 'short' }),
+          value: monthCO2 / 1000
+        });
+      }
+    }
+
+    // Generate comparison text
+    let comparisonText = '';
+    if (improvementPercent > 0) {
+      comparisonText = `You're ${improvementPercent}% better than last ${period === 'weekly' ? 'week' : period === 'monthly' ? 'month' : 'year'}!`;
+    } else if (improvementPercent < 0) {
+      comparisonText = `${Math.abs(improvementPercent)}% increase from last ${period === 'weekly' ? 'week' : period === 'monthly' ? 'month' : 'year'}`;
+    } else {
+      comparisonText = totalScans > 0 ? 'Same as last period' : 'Start scanning to track progress!';
+    }
+
+    res.json({
+      metrics: {
+        label: period.charAt(0).toUpperCase() + period.slice(1),
+        totalScans,
+        footprintKg: totalCO2 / 1000,
+        improvementPercent: Math.max(improvementPercent, 0),
+        topCategory,
+        topItem,
+        comparisonText
+      },
+      trendData
+    });
+  } catch (error) {
+    console.error('Dashboard stats error:', error);
+    res.status(500).json({ error: 'Failed to get dashboard stats' });
+  }
+});
+
+// ============================================
 // START SERVER
 // ============================================
 app.listen(PORT, () => {
@@ -313,4 +550,7 @@ app.listen(PORT, () => {
   console.log(`   POST /api/emissions`);
   console.log(`   GET  /api/emissions/today/:userId`);
   console.log(`   GET  /api/emissions/history/:userId`);
+  console.log(`   GET  /api/emissions/recent/:userId`);
+  console.log(`   GET  /api/emissions/breakdown/:userId`);
+  console.log(`   GET  /api/dashboard/stats/:userId`);
 });
