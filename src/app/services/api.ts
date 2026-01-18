@@ -1,8 +1,8 @@
 // API Integration Layer for EcoLens
-// Using OpenAI GPT-4 Vision API for image analysis and ElevenLabs for TTS
+// Using Google Gemini 2.5 Flash for image analysis and ElevenLabs for TTS
 
 // @ts-expect-error Vite env types
-const OPENAI_API_KEY: string = import.meta.env.VITE_OPENAI_API_KEY || '';
+const GEMINI_API_KEY: string = import.meta.env.VITE_GEMINI_API_KEY || '';
 // @ts-expect-error Vite env types
 const ELEVENLABS_API_KEY: string = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
 // @ts-expect-error Vite env types
@@ -310,53 +310,62 @@ function validateAndNormalizeResponse(result: AnalysisResponse): void {
 }
 
 /**
- * Analyze image using OpenAI GPT-4 Vision API
+ * Analyze image using Google Gemini 2.5 Flash API
  */
 export async function analyzeWithGemini(imageData: string): Promise<AnalysisResponse> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OpenAI API key not configured');
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API key not configured');
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: ANALYSIS_PROMPT },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageData,
-                  detail: 'low'
+    // Extract base64 data and mime type from data URL
+    const matches = imageData.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) {
+      throw new Error('Invalid image data format');
+    }
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: ANALYSIS_PROMPT },
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: base64Data
+                  }
                 }
-              }
-            ]
+              ]
+            }
+          ],
+          generationConfig: {
+            maxOutputTokens: 4096
           }
-        ],
-        max_tokens: 1500
-      })
-    });
+        })
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('OpenAI API error response:', errorData);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('Gemini API error response:', errorData);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
 
-    // Extract text from OpenAI response
-    const textContent = data.choices?.[0]?.message?.content;
+    // Extract text from Gemini response
+    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textContent) {
-      throw new Error('No response from OpenAI');
+      throw new Error('No response from Gemini');
     }
 
     // Parse the JSON response (handle potential markdown code blocks)
@@ -372,14 +381,14 @@ export async function analyzeWithGemini(imageData: string): Promise<AnalysisResp
     }
 
     const analysisResult = JSON.parse(jsonStr.trim());
-    
+
     // Validate and normalize consistency
     validateAndNormalizeResponse(analysisResult);
-    
+
     return analysisResult;
 
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('Gemini API error:', error);
     throw error;
   }
 }
