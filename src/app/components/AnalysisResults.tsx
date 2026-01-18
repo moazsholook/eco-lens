@@ -55,7 +55,7 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
   const positionOnCurve = Math.min(maxRange, carbonKg);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
       <div className="max-w-4xl mx-auto">
         {/* Hero Image & Main Impact */}
         <Card className="overflow-hidden mb-6 border-emerald-200">
@@ -104,26 +104,26 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
           )}
 
           {/* Carbon Impact Lifetime Visualization */}
-          <div className="p-6 bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <TrendingDown className="w-5 h-5 text-emerald-600" />
-                <span className="font-semibold text-emerald-900">Lifetime Carbon Impact</span>
+          <div className="p-4 sm:p-6 bg-white">
+            <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 flex-shrink-0" />
+                <span className="font-semibold text-emerald-900 text-sm sm:text-base">Lifetime Carbon Impact</span>
               </div>
-              <Badge className={`${impactMetrics.color} text-white`}>
+              <Badge className={`${impactMetrics.color} text-white text-xs`}>
                 {impactMetrics.label}
               </Badge>
             </div>
             
             {/* Bell Curve Visualization - Product Carbon Distribution */}
             <div className="relative mb-6">
-              <div className="relative h-48 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <svg className="w-full h-full" viewBox="0 0 400 160" preserveAspectRatio="none">
+              <div className="relative h-52 sm:h-56 bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 overflow-hidden">
+                <svg className="w-full h-full" viewBox="0 0 400 180" preserveAspectRatio="xMidYMid meet">
                   {/* Bell curve path */}
                   <path
                     d={bellCurveData.map((point, i) => {
-                      const x = (point.x / maxRange) * 400;
-                      const y = 160 - (point.y / maxY) * 140;
+                      const x = 20 + (point.x / maxRange) * 360;
+                      const y = 130 - (point.y / maxY) * 110;
                       return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
                     }).join(' ')}
                     fill="none"
@@ -143,21 +143,21 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
                   
                   {/* Fill area under curve */}
                   <path
-                    d={`M 0 160 ${bellCurveData.map((point, i) => {
-                      const x = (point.x / maxRange) * 400;
-                      const y = 160 - (point.y / maxY) * 140;
+                    d={`M 20 130 ${bellCurveData.map((point) => {
+                      const x = 20 + (point.x / maxRange) * 360;
+                      const y = 130 - (point.y / maxY) * 110;
                       return `L ${x} ${y}`;
-                    }).join(' ')} L 400 160 Z`}
+                    }).join(' ')} L 380 130 Z`}
                     fill="url(#gradient)"
                     fillOpacity="0.2"
                   />
                   
                   {/* Current position indicator */}
                   <line
-                    x1={(positionOnCurve / maxRange) * 400}
-                    y1="0"
-                    x2={(positionOnCurve / maxRange) * 400}
-                    y2="160"
+                    x1={20 + (positionOnCurve / maxRange) * 360}
+                    y1="10"
+                    x2={20 + (positionOnCurve / maxRange) * 360}
+                    y2="130"
                     stroke="#000"
                     strokeWidth="2"
                     strokeDasharray="4 4"
@@ -165,47 +165,50 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
                   
                   {/* Indicator dot */}
                   <circle
-                    cx={(positionOnCurve / maxRange) * 400}
-                    cy={160 - ((bellCurveData[Math.min(Math.round((positionOnCurve / maxRange) * 200), 200)]?.y || 0) / maxY) * 140}
-                    r="6"
+                    cx={20 + (positionOnCurve / maxRange) * 360}
+                    cy={130 - ((bellCurveData[Math.min(Math.round((positionOnCurve / maxRange) * 200), 200)]?.y || 0) / maxY) * 110}
+                    r="5"
                     fill="#000"
                     stroke="#fff"
                     strokeWidth="2"
                   />
                   
                   {/* Labels on x-axis (kg CO2e) */}
-                  {[0, 25, 50, 100, 150, 200].filter(v => v <= maxRange).map((kg) => (
+                  {[0, 50, 100, 150, 200].filter(v => v <= maxRange).map((kg) => (
                     <g key={kg}>
                       <line
-                        x1={(kg / maxRange) * 400}
-                        y1="155"
-                        x2={(kg / maxRange) * 400}
-                        y2="160"
+                        x1={20 + (kg / maxRange) * 360}
+                        y1="130"
+                        x2={20 + (kg / maxRange) * 360}
+                        y2="138"
                         stroke="#6b7280"
                         strokeWidth="1"
                       />
                       <text
-                        x={(kg / maxRange) * 400}
-                        y="175"
+                        x={20 + (kg / maxRange) * 360}
+                        y="152"
                         textAnchor="middle"
-                        className="text-xs fill-gray-600"
-                        fontSize="10"
+                        className="fill-gray-500"
+                        fontSize="9"
                       >
                         {kg}kg
                       </text>
                     </g>
                   ))}
+                  
+                  {/* Baseline */}
+                  <line x1="20" y1="130" x2="380" y2="130" stroke="#d1d5db" strokeWidth="1" />
                 </svg>
                 
                 {/* Y-axis label */}
-                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 -rotate-90 text-xs text-gray-500">
-                  Product Frequency
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -rotate-90 text-[10px] sm:text-xs text-gray-500 whitespace-nowrap origin-center">
+                  Frequency
                 </div>
               </div>
               
               {/* X-axis label */}
-              <p className="text-center text-xs text-gray-500 mt-2">
-                Product Carbon Footprint (Full Lifecycle: Production + Usage + Disposal)
+              <p className="text-center text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-2 px-2">
+                Carbon Footprint (kg CO₂e) — Full Lifecycle
               </p>
             </div>
             
@@ -237,27 +240,27 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Product's Total</p>
-                  <p className="text-base font-bold text-gray-900">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-200">
+                <div className="text-center px-1">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Product Total</p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900">
                     {carbonKg >= 1 
                       ? `${carbonKg.toFixed(1)}kg`
                       : `${data.carbonValue.toFixed(0)}g`}
                   </p>
-                  <p className="text-xs text-gray-500">CO₂e</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">CO₂e</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Your Yearly</p>
-                  <p className="text-base font-bold text-gray-900">4.0 tons</p>
-                  <p className="text-xs text-gray-500">Carbon Budget</p>
+                <div className="text-center px-1">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Your Budget</p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900">4 tons</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">per year</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">This Item Uses</p>
-                  <p className="text-base font-bold text-gray-900">
+                <div className="text-center px-1">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Item Uses</p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900">
                     {impactMetrics.annualPercent.toFixed(2)}%
                   </p>
-                  <p className="text-xs text-gray-500">of Annual Budget</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">of budget</p>
                 </div>
               </div>
             </div>
@@ -321,26 +324,26 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
         </Card>
 
         {/* Sustainable Alternatives */}
-        <Card className="p-6 mb-6 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
+        <Card className="p-4 sm:p-6 mb-6 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 overflow-hidden">
           <div className="flex items-center gap-3 mb-4">
-            <div className="bg-emerald-500 p-2 rounded-lg">
+            <div className="bg-emerald-500 p-2 rounded-lg flex-shrink-0">
               <Lightbulb className="w-5 h-5 text-white" />
             </div>
             <h3 className="font-semibold text-emerald-900">Sustainable Alternatives</h3>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {data.alternatives.map((alt, index) => (
               <div key={index}>
-                {index > 0 && <Separator className="my-4" />}
-                <div className="bg-white rounded-lg p-4 border border-emerald-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-semibold text-emerald-900">{alt.name}</h4>
-                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                {index > 0 && <Separator className="my-3 sm:my-4" />}
+                <div className="bg-white rounded-lg p-3 sm:p-4 border border-emerald-200 overflow-hidden">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                    <h4 className="font-semibold text-emerald-900 break-words">{alt.name}</h4>
+                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 text-xs flex-shrink-0 self-start whitespace-nowrap">
                       {alt.carbonSavings}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600">{alt.benefit}</p>
+                  <p className="text-sm text-gray-600 break-words">{alt.benefit}</p>
                 </div>
               </div>
             ))}

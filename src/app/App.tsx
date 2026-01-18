@@ -457,6 +457,7 @@ Analyze this product's environmental impact.`;
         user={user}
         onSignIn={handleShowSignIn}
         onSignOut={handleSignOut}
+        hideUserControls={!!analysisData}
       />
       
       {!showCamera && !analysisData && !isAnalyzing && (
