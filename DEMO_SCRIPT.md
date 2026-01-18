@@ -20,7 +20,7 @@
 
 1. **Show Welcome Screen**
    - "Here's EcoLens. The interface is clean, mobile-first, and ready to go."
-   - Point out: UOttaHackathon badge, clear CTAs, tech stack badges
+   - Point out: UOttaHack badge, clear CTAs, tech stack badges
 
 2. **Click Demo Mode Button**
    - "For the judges, we've added a quick demo mode with pre-loaded examples."

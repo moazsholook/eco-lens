@@ -1,6 +1,6 @@
 # 🌍 EcoLens - See the Environmental Cost of Everyday Objects
 
-**UOttaHackathon 2026 Submission**
+**UOttaHack 2026 Submission**
 
 Point your phone camera at any object and instantly discover its environmental impact, lifecycle story, and sustainable alternatives - all narrated with documentary-style AI voice.
 
@@ -255,7 +255,7 @@ The app can analyze any object. Here are some examples:
 
 ## 👥 Team
 
-Built for UOttaHackathon 2026
+Built for UOttaHack 2026
 
 ---
 
@@ -270,7 +270,7 @@ This project is built for hackathon demonstration purposes.
 - Google Gemini for vision AI capabilities
 - ElevenLabs for natural voice synthesis
 - DigitalOcean for reliable cloud infrastructure
-- UOttaHackathon for organizing this amazing event
+- UOttaHack for organizing this amazing event
 
 ---
 

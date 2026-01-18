@@ -10,7 +10,7 @@ export function PitchSlide() {
         <div className="text-center mb-12">
           <Badge className="bg-purple-100 text-purple-700 mb-4">
             <Sparkles className="w-3 h-3 mr-1" />
-            UOttaHackathon 2026
+            UOttaHack 2026
           </Badge>
           <h1 className="text-5xl font-bold text-emerald-900 mb-4">EcoLens</h1>
           <p className="text-xl text-emerald-700">

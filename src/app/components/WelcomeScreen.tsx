@@ -1,7 +1,6 @@
 import { 
   Camera as CameraIcon, 
   Sparkles, 
-  ScanBarcode,
   Leaf,
   Sprout,
   Heart,
@@ -21,7 +20,6 @@ import { useMemo } from 'react';
 
 interface WelcomeScreenProps {
   onStart: () => void;
-  onBarcodeScan?: () => void;
 }
 
 // Particle component for floating leaves/eco elements
@@ -98,7 +96,7 @@ function FloatingParticles() {
   );
 }
 
-export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
+export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   const examples = [
     { Icon: Coffee, label: 'Coffee Cup' },
     { Icon: Laptop, label: 'Laptop' },
@@ -116,7 +114,7 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-6 animate-in fade-in duration-700">
             <Sparkles className="w-4 h-4" />
-            UOttaHackathon 2026
+            UOttaHack 2026
           </div>
           
           <h2 className="text-5xl font-bold text-emerald-900 mb-4 animate-in fade-in duration-700 delay-100">
@@ -140,17 +138,6 @@ export function WelcomeScreen({ onStart, onBarcodeScan }: WelcomeScreenProps) {
               Start Scanning
             </Button>
             
-            {onBarcodeScan && (
-              <Button
-                onClick={onBarcodeScan}
-                size="lg"
-                variant="outline"
-                className="border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50 px-8 py-6 text-lg gap-3 shadow-lg hover:shadow-xl transition-all"
-              >
-                <ScanBarcode className="w-6 h-6" />
-                Scan Barcode
-              </Button>
-            )}
           </div>
         </div>
 
