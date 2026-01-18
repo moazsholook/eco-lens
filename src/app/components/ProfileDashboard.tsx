@@ -1,7 +1,8 @@
-import { useId, useState, useEffect } from 'react';
+import { useId, useState, useEffect, ReactNode } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, PieChart, Pie, Cell } from 'recharts';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
+import { Trophy, Lightbulb, PartyPopper } from 'lucide-react';
 import {
   ChartContainer,
   ChartTooltip,
@@ -35,7 +36,7 @@ export interface Badge {
   id: string;
   name: string;
   description: string;
-  icon: string;
+  icon: ReactNode;
   earned: boolean;
   earnedDate?: string;
   progress?: number;
@@ -222,7 +223,7 @@ export function ProfileDashboard({
       {/* Comparison Banner */}
       {activeMetrics.comparisonText && (
         <div className="mb-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-3 rounded-xl flex items-center gap-3">
-          <span className="text-2xl">🎉</span>
+          <PartyPopper className="w-6 h-6 flex-shrink-0" />
           <p className="font-medium">{activeMetrics.comparisonText}</p>
         </div>
       )}
@@ -522,7 +523,7 @@ export function ProfileDashboard({
         {tips.length > 0 && (
           <Card className="p-6 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl">💡</span>
+              <Lightbulb className="w-5 h-5 text-amber-500" />
               <h2 className="text-lg font-semibold text-emerald-900">
                 Tips for {activeMetrics.topCategory}
               </h2>
@@ -546,7 +547,7 @@ export function ProfileDashboard({
         {badges.length > 0 && (
           <Card className="p-6 border-emerald-200 bg-white/70 backdrop-blur">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-xl">🏆</span>
+              <Trophy className="w-5 h-5 text-amber-500" />
               <h2 className="text-lg font-semibold text-emerald-900">
                 Achievements
               </h2>
@@ -562,7 +563,7 @@ export function ProfileDashboard({
                   key={badge.id}
                   className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 text-center"
                 >
-                  <span className="text-3xl">{badge.icon}</span>
+                  <div className="flex justify-center text-emerald-600">{badge.icon}</div>
                   <p className="text-sm font-semibold text-emerald-900 mt-2">{badge.name}</p>
                   <p className="text-xs text-emerald-600 mt-1">{badge.description}</p>
                   {badge.earnedDate && (
@@ -584,7 +585,7 @@ export function ProfileDashboard({
                       key={badge.id}
                       className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center opacity-75"
                     >
-                      <span className="text-3xl grayscale">{badge.icon}</span>
+                      <div className="flex justify-center text-gray-400">{badge.icon}</div>
                       <p className="text-sm font-semibold text-gray-700 mt-2">{badge.name}</p>
                       <p className="text-xs text-gray-500 mt-1">{badge.description}</p>
                       {badge.progress !== undefined && badge.total !== undefined && (

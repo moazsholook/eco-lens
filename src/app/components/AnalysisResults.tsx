@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Volume2, VolumeX, Leaf, TrendingDown, Lightbulb, Recycle, AlertCircle, Settings, Mic, Cloud } from 'lucide-react';
+import { Camera, Volume2, VolumeX, Leaf, TrendingDown, Lightbulb, Recycle, AlertCircle } from 'lucide-react';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
-import { Progress } from '@/app/components/ui/progress';
 import { Separator } from '@/app/components/ui/separator';
 import { CarbonComparisons } from '@/app/components/CarbonComparisons';
 import { getCarbonImpactMetrics, getIdealAnnualFootprint, generateBellCurveData } from '@/app/utils/carbonImpact';
@@ -324,7 +323,7 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
         </Card>
 
         {/* Sustainable Alternatives */}
-        <Card className="p-4 sm:p-6 mb-6 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 overflow-hidden">
+        <Card className="p-4 sm:p-6 mb-6 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-emerald-500 p-2 rounded-lg flex-shrink-0">
               <Lightbulb className="w-5 h-5 text-white" />
@@ -336,54 +335,17 @@ export function AnalysisResults({ data, onScanAnother }: AnalysisResultsProps) {
             {data.alternatives.map((alt, index) => (
               <div key={index}>
                 {index > 0 && <Separator className="my-3 sm:my-4" />}
-                <div className="bg-white rounded-lg p-3 sm:p-4 border border-emerald-200 overflow-hidden">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                    <h4 className="font-semibold text-emerald-900 break-words">{alt.name}</h4>
-                    <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 text-xs flex-shrink-0 self-start whitespace-nowrap">
+                <div className="bg-white rounded-lg p-3 sm:p-4 border border-emerald-200">
+                  <h4 className="font-semibold text-emerald-900 mb-2">{alt.name}</h4>
+                  <div className="mb-2">
+                    <span className="inline-block bg-green-100 text-green-700 border border-green-300 text-xs px-2 py-1 rounded-md">
                       {alt.carbonSavings}
-                    </Badge>
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-600 break-words">{alt.benefit}</p>
+                  <p className="text-sm text-gray-600">{alt.benefit}</p>
                 </div>
               </div>
             ))}
-          </div>
-        </Card>
-
-        {/* Integration Notes */}
-        <Card className="p-6 mb-6 border-blue-200 bg-blue-50">
-          <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Integration Instructions
-          </h4>
-          <div className="space-y-3 text-sm">
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <p className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-                <Camera className="w-4 h-4" />
-                Gemini Vision API
-              </p>
-              <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
-                POST /api/analyze → Send image → Get object ID & environmental data
-              </code>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <p className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-                <Mic className="w-4 h-4" />
-                ElevenLabs TTS API
-              </p>
-              <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
-                POST /api/narrate → Send explanation text → Get audio URL
-              </code>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
-              <p className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-                <Cloud className="w-4 h-4" />
-                DigitalOcean Backend
-              </p>
-              <p className="text-xs text-gray-600">
-                Host your API endpoints, object database, and inference logic on DigitalOcean
-              </p>
-            </div>
           </div>
         </Card>
 
