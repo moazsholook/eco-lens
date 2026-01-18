@@ -1,6 +1,6 @@
 # 🌍 EcoLens - Environmental Impact Scanner
 
-> **UOttaHackathon 2026 Submission**
+> **UOttaHack 2026 Submission**
 
 Point your camera at any everyday object and instantly discover its carbon footprint, lifecycle impact, and sustainable alternatives - all explained with AI-powered documentary narration.
 
@@ -127,7 +127,7 @@ The app is **ready for API integration**. See [BACKEND_SETUP.md](./BACKEND_SETUP
 
 ## 📄 License
 
-Built for UOttaHackathon 2026
+Built for UOttaHack 2026
 
 ---
 

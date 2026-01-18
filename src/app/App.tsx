@@ -454,7 +454,6 @@ Analyze this product's environmental impact.`;
       <Header 
         onReset={handleReset} 
         showReset={!!analysisData} 
-        onDemoSelect={handleDemoSelect}
         user={user}
         onSignIn={handleShowSignIn}
         onSignOut={handleSignOut}
@@ -478,7 +477,7 @@ Analyze this product's environmental impact.`;
             onStartScanning={handleStartScanning}
           />
         ) : (
-          <WelcomeScreen onStart={handleStartScanning} onBarcodeScan={handleStartBarcodeScanning} />
+          <WelcomeScreen onStart={handleStartScanning} />
         )
       )}
       
